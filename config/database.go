@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"go-microservice-product-porto/app/models"
 
 	"gorm.io/driver/postgres"
@@ -9,14 +10,19 @@ import (
 
 var DB *gorm.DB
 
-func InitConfig() {
+func InitDatabase(config *Config) error {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
+	config.DBHost, config.DBUser, config.DBPassword, config.DBName, config.DBTimezone)
 	var err error
-	dsn := "host=localhost user=postgres password=postgres dbname=product_db port=5432 sslmode=disable TimeZone=Asia/Jakarta"
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic("Failed to connect to database")
+		return fmt.Errorf("Failed to connect to database: %v", err)
 	}
 
 	// Auto migrate models
-	DB.AutoMigrate(&models.Product{})
+	err = DB.AutoMigrate(&models.Product{})
+	if err != nil {
+		return fmt.Errorf("Failed to migrate models: %v", err)
+	}
+	return nil
 }
