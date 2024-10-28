@@ -15,11 +15,17 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	// Default route
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "Welcome to the Product Service"})
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Hello Product API Here",
+		})
 	})
 
-	// Swagger documentation endpoint
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Swagger documentation
+	r.GET("/doc", func(c *gin.Context) {
+		c.Request.URL.Path = "/doc/index.html"
+		r.HandleContext(c)
+	})
+	r.GET("/doc/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Initialize repository
 	productRepo := repositories.NewProductRepository(config.DB)
@@ -30,7 +36,7 @@ func SetupRoutes(r *gin.Engine) {
 	// Initialize controller
 	productController := controllers.NewProductController(productBusiness)
 
-	// Group routes
+	// API Routes
 	api := r.Group("/api")
 	{
 		products := api.Group("/products")

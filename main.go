@@ -25,8 +25,6 @@ import (
 
 // @host      localhost:8080
 // @BasePath  /api
-
-// @securityDefinitions.basic  BasicAuth
 func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig()
