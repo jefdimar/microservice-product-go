@@ -1,16 +1,32 @@
 package main
 
 import (
+	"fmt"
 	"go-microservice-product-porto/app/routes"
 	"go-microservice-product-porto/config"
-	"strings"
-
-	"fmt"
+	_ "go-microservice-product-porto/docs"
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
+// @title           Product API
+// @version         1.0
+// @description     A Product microservice API in Go using Gin framework.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /api
+
+// @securityDefinitions.basic  BasicAuth
 func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig()
