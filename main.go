@@ -3,6 +3,7 @@ package main
 import (
 	"go-microservice-product-porto/app/routes"
 	"go-microservice-product-porto/config"
+	"strings"
 
 	"fmt"
 	"log"
@@ -25,6 +26,10 @@ func main() {
 
 	// Set up Gin
 	r := gin.Default()
+
+	// Configure trusted proxies
+	trustedProxies := strings.Split(cfg.TrustedProxies, ",")
+	r.SetTrustedProxies(trustedProxies)
 
 	// Initialize routes
 	routes.SetupRoutes(r)

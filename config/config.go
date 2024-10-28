@@ -16,6 +16,8 @@ type Config struct {
 	DBName     string
 	DBPort     string
 	DBTimezone string
+
+	TrustedProxies string
 }
 
 func LoadConfig() (*Config, error) {
@@ -33,6 +35,8 @@ func LoadConfig() (*Config, error) {
 		DBName:     os.Getenv("DB_NAME"),
 		DBPort:     os.Getenv("DB_PORT"),
 		DBTimezone: os.Getenv("DB_TIMEZONE"),
+
+		TrustedProxies: os.Getenv("TRUSTED_PROXIES"),
 	}
 
 	return config, nil
