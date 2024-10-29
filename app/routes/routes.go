@@ -16,7 +16,7 @@ func SetupRoutes(r *gin.Engine) {
 	// Default route
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Hello Product API Here",
+			"message": "OK",
 		})
 	})
 
