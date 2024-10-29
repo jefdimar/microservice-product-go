@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"go-microservice-product-porto/app/business"
 	"go-microservice-product-porto/app/models"
+	"go-microservice-product-porto/app/usecase"
 	"net/http"
 	"strconv"
 
@@ -10,11 +10,11 @@ import (
 )
 
 type ProductController struct {
-	business *business.ProductBusiness
+	business *usecase.ProductUsecase
 }
 
-func NewProductController(business *business.ProductBusiness) *ProductController {
-	return &ProductController{business}
+func NewProductController(usecase *usecase.ProductUsecase) *ProductController {
+	return &ProductController{usecase}
 }
 
 // @Summary Create a new product

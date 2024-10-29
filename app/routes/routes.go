@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"go-microservice-product-porto/app/business"
 	"go-microservice-product-porto/app/controllers"
 	"go-microservice-product-porto/app/repositories"
+	"go-microservice-product-porto/app/usecase"
 	"go-microservice-product-porto/config"
 	"net/http"
 
@@ -31,10 +31,10 @@ func SetupRoutes(r *gin.Engine) {
 	productRepo := repositories.NewProductRepository(config.DB)
 
 	// Initialize business
-	productBusiness := business.NewProductBusiness(productRepo)
+	productUsecase := usecase.NewProductUsecase(productRepo)
 
 	// Initialize controller
-	productController := controllers.NewProductController(productBusiness)
+	productController := controllers.NewProductController(productUsecase)
 
 	// API Routes
 	api := r.Group("/api")
