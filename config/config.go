@@ -1,42 +1,48 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	ServerPort string
+	ServerPort 			string
+	TrustedProxies 	string
 
-	DBHost     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBPort     string
-	DBTimezone string
+	PostgresHost     string
+	PostgresUser     string
+	PostgresPassword string
+	PostgresDBName   string
+	PostgresPort     string
+	PostgresTimezone string
 
-	TrustedProxies string
+	MongoHost 		string
+	MongoPort 		string
+	MongoUser 		string
+	MongoPassword string
+	MongoDBName 	string
 }
 
 func LoadConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
-		return nil, fmt.Errorf("error loading .env file")
+		return nil, err
 	}
 
 	config := &Config{
-		ServerPort: os.Getenv("SERVER_PORT"),
-
-		DBHost:     os.Getenv("DB_HOST"),
-		DBUser:     os.Getenv("DB_USER"),
-		DBPassword: os.Getenv("DB_PASSWORD"),
-		DBName:     os.Getenv("DB_NAME"),
-		DBPort:     os.Getenv("DB_PORT"),
-		DBTimezone: os.Getenv("DB_TIMEZONE"),
-
+		ServerPort:     os.Getenv("SERVER_PORT"),
 		TrustedProxies: os.Getenv("TRUSTED_PROXIES"),
+		PostgresHost:         os.Getenv("POSTGRES_HOST"),
+		PostgresUser:         os.Getenv("POSTGRES_USER"),
+		PostgresPassword:         os.Getenv("POSTGRES_PASSWORD"),
+		PostgresDBName:     os.Getenv("POSTGRES_DBNAME"),
+		PostgresPort: os.Getenv("POSTGRES_PORT"),
+		MongoHost: os.Getenv("MONGO_HOST"),
+		MongoPort: os.Getenv("MONGO_PORT"),
+		MongoUser: os.Getenv("MONGO_USER"),
+		MongoPassword: os.Getenv("MONGO_PASSWORD"),
+		MongoDBName: os.Getenv("MONGO_DB_NAME"),
 	}
 
 	return config, nil

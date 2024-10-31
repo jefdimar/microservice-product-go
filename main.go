@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// Initialize database
-	err = config.InitDatabase(cfg)
+	err = config.InitDatabases(cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}

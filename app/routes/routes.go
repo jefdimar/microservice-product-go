@@ -4,7 +4,6 @@ import (
 	"go-microservice-product-porto/app/controllers"
 	"go-microservice-product-porto/app/repositories"
 	"go-microservice-product-porto/app/usecase"
-	"go-microservice-product-porto/config"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/doc/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Initialize repository
-	productRepo := repositories.NewProductRepository(config.DB)
+	productRepo := repositories.NewProductRepository()
 
 	// Initialize business
 	productUsecase := usecase.NewProductUsecase(productRepo)

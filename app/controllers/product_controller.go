@@ -4,9 +4,9 @@ import (
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/usecase"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProductController struct {
@@ -65,23 +65,24 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param id path int true "Product ID"
+// @Param id path string true "Product ID"
 // @Success 200 {object} models.Product
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
 // @Router /products/{id} [get]
 func (c *ProductController) GetByID(ctx *gin.Context) {
-	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
+	id := ctx.Param("id")
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
 		return
 	}
 
-	product, err := c.business.GetProductByID(uint(id))
+	product, err := c.business.GetProductByID(objectID)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, product)
-}
+}	

@@ -7,6 +7,7 @@ services:
       - "8080:8080"
     depends_on:
       - db
+      - mongodb
     environment:
       - DB_HOST=db
       - DB_USER=postgres
@@ -17,6 +18,7 @@ services:
       - SERVER_PORT=8080
       - SWAGGER_USERNAME=admin
       - SWAGGER_PASSWORD=password123
+      - MONGODB_URI=mongodb://mongodb_user:mongodb_password@mongodb:27017/product_db?authSource=admin
     networks:
       - app-network
 
@@ -38,9 +40,25 @@ services:
       timeout: 5s
       retries: 5
 
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 networks:
   app-network:
     driver: bridge
 
 volumes:
+
   postgres_data:
+  mongodb_data:

@@ -1,28 +1,31 @@
 package config
 
 import (
-	"fmt"
-	"go-microservice-product-porto/app/models"
-
-	"gorm.io/driver/postgres"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
+type DBConnections struct {
+	MongoDB   *mongo.Database
+	PostgreDB *gorm.DB
+}
 
-func InitDatabase(config *Config) error {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
-	config.DBHost, config.DBUser, config.DBPassword, config.DBName, config.DBTimezone)
-	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return fmt.Errorf("Failed to connect to database: %v", err)
-	}
+var DBConn DBConnections
 
-	// Auto migrate models
-	err = DB.AutoMigrate(&models.Product{})
-	if err != nil {
-		return fmt.Errorf("Failed to migrate models: %v", err)
+func InitDatabases(cfg *Config) error {
+	// Initialize MongoDB
+	mongoErr := InitMongoDB(cfg)
+	if mongoErr != nil {
+			return mongoErr
 	}
+	DBConn.MongoDB = MongoDB
+
+	// Initialize PostgreSQL
+	postgresDB, postgresErr := InitPostgres(cfg)
+	if postgresErr != nil {
+			return postgresErr
+	}
+	DBConn.PostgreDB = postgresDB
+
 	return nil
 }
