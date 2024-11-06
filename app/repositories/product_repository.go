@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"go-microservice-product-porto/app/helpers"
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/config"
 	"time"
@@ -45,8 +46,17 @@ func (r *ProductRepository) FindByIDInPostgres(id uint) (*models.Product, error)
 // MongoDB operations
 func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 	product.ID = primitive.NewObjectID()
+	product.SKU = helpers.GenerateSKU()
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
+
+	if !product.IsActive {
+		product.IsActive = true
+	}
+
+	if product.Stock < 0 {
+		product.Stock = 0
+	}
 
 	_, err := r.mongoCollection.InsertOne(context.Background(), product)
 	return err
