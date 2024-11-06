@@ -61,8 +61,18 @@ func (r *ProductRepository) FindAllInMongo() ([]models.Product, error) {
 	return products, err
 }
 
-func (r *ProductRepository) FindByIDInMongo(id primitive.ObjectID) (*models.Product, error) {
-	var product models.Product
-	err := r.mongoCollection.FindOne(context.Background(), bson.M{"_id": id}).Decode(&product)
-	return &product, err
+func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, error) {
+  var product models.Product
+  objectId, err := primitive.ObjectIDFromHex(idString)
+  if err != nil {
+      return nil, err
+  }
+
+  filter := bson.M{"id": objectId}
+  err = r.mongoCollection.FindOne(context.Background(), filter).Decode(&product)
+  if err != nil {
+      return nil, err
+  }
+    
+  return &product, nil
 }

@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ProductController struct {
@@ -72,17 +71,11 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 // @Router /products/{id} [get]
 func (c *ProductController) GetByID(ctx *gin.Context) {
 	id := ctx.Param("id")
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
-		return
-	}
-
-	product, err := c.business.GetProductByID(objectID)
+	product, err := c.business.GetProductByID(id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, product)
-}	
+}
