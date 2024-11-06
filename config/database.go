@@ -16,14 +16,14 @@ func InitDatabases(cfg *Config) error {
 	// Initialize MongoDB
 	mongoErr := InitMongoDB(cfg)
 	if mongoErr != nil {
-			return mongoErr
+		return mongoErr
 	}
 	DBConn.MongoDB = MongoDB
 
 	// Initialize PostgreSQL
 	postgresDB, postgresErr := InitPostgres(cfg)
 	if postgresErr != nil {
-			return postgresErr
+		return postgresErr
 	}
 	DBConn.PostgreDB = postgresDB
 

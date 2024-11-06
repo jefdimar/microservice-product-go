@@ -9,21 +9,21 @@ import (
 )
 
 func InitPostgres(cfg *Config) (*gorm.DB, error) {
-    dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
-        cfg.PostgresHost,
-        cfg.PostgresUser,
-        cfg.PostgresPassword,
-        cfg.PostgresDBName,
-        cfg.PostgresPort,
-    )
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Jakarta",
+		cfg.PostgresHost,
+		cfg.PostgresUser,
+		cfg.PostgresPassword,
+		cfg.PostgresDBName,
+		cfg.PostgresPort,
+	)
 
-    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-    if err != nil {
-        return nil, fmt.Errorf("failed to connect to PostgreSQL: %v", err)
-    }
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to PostgreSQL: %v", err)
+	}
 
-    // Auto Migrate your models here
-    db.AutoMigrate(&models.PostgresProduct{})
+	// Auto Migrate your models here
+	db.AutoMigrate(&models.PostgresProduct{})
 
-    return db, nil
+	return db, nil
 }

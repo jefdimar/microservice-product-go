@@ -14,7 +14,7 @@ var MongoDB *mongo.Database
 func InitMongoDB(cfg *Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	// Construct MongoDB connection URI
 	mongoURI := fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=admin",
 		cfg.MongoUser,
