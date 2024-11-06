@@ -27,3 +27,5 @@ vendor/
 # Log files
 *.log
 docs/
+
+tmp/

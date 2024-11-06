@@ -31,15 +31,16 @@ type MongoProduct struct {
 }
 
 type Product struct {
-	ID          interface{} `json:"id"`
-	SKU         string      `json:"sku"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Price       float64     `json:"price"`
-	Stock       int         `json:"stock"`
-	IsActive    bool        `json:"is_active"`
-	CreatedAt   time.Time   `json:"created_at"`
-	UpdatedAt   time.Time   `json:"updated_at"`
+	ID             interface{} `json:"id"`
+	SKU            string      `json:"sku"`
+	Name           string      `json:"name"`
+	Description    string      `json:"description"`
+	Price          float64     `json:"price"`
+	FormattedPrice string      `json:"formatted_price"`
+	Stock          int         `json:"stock"`
+	IsActive       bool        `json:"is_active"`
+	CreatedAt      time.Time   `json:"created_at"`
+	UpdatedAt      time.Time   `json:"updated_at"`
 }
 
 func (p PostgresProduct) ToCommon() Product {

@@ -49,6 +49,7 @@ func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 	product.SKU = helpers.GenerateSKU()
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
+	product.FormattedPrice = helpers.FormatPrice(product.Price)
 
 	if !product.IsActive {
 		product.IsActive = true
@@ -72,6 +73,14 @@ func (r *ProductRepository) FindAllInMongo() ([]models.Product, error) {
 	}
 
 	err = cursor.All(context.Background(), &products)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range products {
+		products[i].FormattedPrice = helpers.FormatPrice(products[i].Price)
+	}
+
 	return products, err
 }
 
@@ -87,6 +96,8 @@ func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, e
 	if err != nil {
 		return nil, err
 	}
+
+	product.FormattedPrice = helpers.FormatPrice(product.Price)
 
 	return &product, nil
 }
