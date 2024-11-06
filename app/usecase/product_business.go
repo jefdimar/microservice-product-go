@@ -24,3 +24,7 @@ func (b *ProductUsecase) GetAllProducts() ([]models.Product, error) {
 func (b *ProductUsecase) GetProductByID(id string) (*models.Product, error) {
 	return b.repo.FindByIDInMongo(id)
 }
+
+func (b *ProductUsecase) UpdateProduct(id string, product *models.Product) error {
+	return b.repo.UpdateInMongo(id, product)
+}

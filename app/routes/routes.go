@@ -43,6 +43,7 @@ func SetupRoutes(r *gin.Engine) {
 			products.POST("/", productController.Create)
 			products.GET("/", productController.GetAll)
 			products.GET("/:id", productController.GetByID)
+			products.PUT("/:id", productController.Update)
 		}
 	}
 }

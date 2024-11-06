@@ -79,3 +79,31 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, product)
 }
+
+// @Summary Update a product
+// @Description Update a product with the provided input data
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param id path string true "Product ID"
+// @Param product body models.Product true "Update product"
+// @Success 200 {object} models.Product
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /products/{id} [put]
+func (c *ProductController) Update(ctx *gin.Context) {
+	id := ctx.Param("id")
+	var product models.Product
+
+	if err := ctx.ShouldBindJSON(&product); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := c.business.UpdateProduct(id, &product); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Product not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Product updated successfully"})
+}

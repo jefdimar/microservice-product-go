@@ -76,3 +76,23 @@ func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, e
     
   return &product, nil
 }
+
+func (r *ProductRepository) UpdateInMongo(idString string, product *models.Product) error {
+  objectId, err := primitive.ObjectIDFromHex(idString)
+  if err != nil {
+    return err
+  }
+
+  update := bson.M{
+    "$set": bson.M{
+      "name": product.Name,
+      "price": product.Price,
+      "description": product.Description,
+      "updated_at": time.Now(),
+    },
+  }
+
+  filter := bson.M{"id": objectId}
+  _, err = r.mongoCollection.UpdateOne(context.Background(), filter, update)
+  return err
+}
