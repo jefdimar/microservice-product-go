@@ -19,5 +19,5 @@ func GenerateSKU() string {
 		numbers[i] = byte(rand.Intn(10) + '0')
 	}
 
-	return fmt.Sprintf("%s-%s", skuPrefix, string(numbers))
+	return fmt.Sprintf("%s%s", skuPrefix, string(numbers))
 }
