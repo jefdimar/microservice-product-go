@@ -9,18 +9,19 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"gorm.io/gorm"
 )
 
 type ProductRepository struct {
-	postgresDB *gorm.DB
+	postgresDB      *gorm.DB
 	mongoCollection *mongo.Collection
 }
 
 func NewProductRepository() *ProductRepository {
 	return &ProductRepository{
 		mongoCollection: config.DBConn.MongoDB.Collection("products"),
-		postgresDB: config.DBConn.PostgreDB,
+		postgresDB:      config.DBConn.PostgreDB,
 	}
 }
 
@@ -53,46 +54,49 @@ func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 
 func (r *ProductRepository) FindAllInMongo() ([]models.Product, error) {
 	var products []models.Product
-	cursor, err := r.mongoCollection.Find(context.Background(), bson.M{})
+
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	cursor, err := r.mongoCollection.Find(context.Background(), bson.M{}, opts)
 	if err != nil {
-			return nil, err
+		return nil, err
 	}
+
 	err = cursor.All(context.Background(), &products)
 	return products, err
 }
 
 func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, error) {
-  var product models.Product
-  objectId, err := primitive.ObjectIDFromHex(idString)
-  if err != nil {
-      return nil, err
-  }
+	var product models.Product
+	objectId, err := primitive.ObjectIDFromHex(idString)
+	if err != nil {
+		return nil, err
+	}
 
-  filter := bson.M{"id": objectId}
-  err = r.mongoCollection.FindOne(context.Background(), filter).Decode(&product)
-  if err != nil {
-      return nil, err
-  }
-    
-  return &product, nil
+	filter := bson.M{"id": objectId}
+	err = r.mongoCollection.FindOne(context.Background(), filter).Decode(&product)
+	if err != nil {
+		return nil, err
+	}
+
+	return &product, nil
 }
 
 func (r *ProductRepository) UpdateInMongo(idString string, product *models.Product) error {
-  objectId, err := primitive.ObjectIDFromHex(idString)
-  if err != nil {
-    return err
-  }
+	objectId, err := primitive.ObjectIDFromHex(idString)
+	if err != nil {
+		return err
+	}
 
-  update := bson.M{
-    "$set": bson.M{
-      "name": product.Name,
-      "price": product.Price,
-      "description": product.Description,
-      "updated_at": time.Now(),
-    },
-  }
+	update := bson.M{
+		"$set": bson.M{
+			"name":        product.Name,
+			"price":       product.Price,
+			"description": product.Description,
+			"updated_at":  time.Now(),
+		},
+	}
 
-  filter := bson.M{"id": objectId}
-  _, err = r.mongoCollection.UpdateOne(context.Background(), filter, update)
-  return err
+	filter := bson.M{"id": objectId}
+	_, err = r.mongoCollection.UpdateOne(context.Background(), filter, update)
+	return err
 }
