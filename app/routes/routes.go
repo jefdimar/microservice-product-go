@@ -44,6 +44,7 @@ func SetupRoutes(r *gin.Engine) {
 			products.GET("/", productController.GetAll)
 			products.GET("/:id", productController.GetByID)
 			products.PUT("/:id", productController.Update)
+			products.DELETE("/:id", productController.Delete)
 		}
 	}
 }

@@ -107,3 +107,24 @@ func (c *ProductController) Update(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Product updated successfully"})
 }
+
+// @Summary Delete a product
+// @Description Delete a product by its ID
+// @Tags products
+// @Accept json
+// @Produce json
+// @Param id path string true "Product ID"
+// @Success 200 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /products/{id} [delete]
+func (c *ProductController) Delete(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	err := c.business.DeleteProduct(id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Product not found"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+}

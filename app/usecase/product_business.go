@@ -28,3 +28,7 @@ func (b *ProductUsecase) GetProductByID(id string) (*models.Product, error) {
 func (b *ProductUsecase) UpdateProduct(id string, product *models.Product) error {
 	return b.repo.UpdateInMongo(id, product)
 }
+
+func (b *ProductUsecase) DeleteProduct(id string) error {
+	return b.repo.DeleteInMongo(id)
+}

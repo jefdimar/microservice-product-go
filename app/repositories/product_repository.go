@@ -100,3 +100,22 @@ func (r *ProductRepository) UpdateInMongo(idString string, product *models.Produ
 	_, err = r.mongoCollection.UpdateOne(context.Background(), filter, update)
 	return err
 }
+
+func (r *ProductRepository) DeleteInMongo(idString string) error {
+	objectId, err := primitive.ObjectIDFromHex(idString)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"id": objectId}
+	result, err := r.mongoCollection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+
+	if result.DeletedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+
+	return nil
+}
