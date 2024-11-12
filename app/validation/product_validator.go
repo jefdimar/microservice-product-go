@@ -3,7 +3,6 @@ package validation
 import (
 	"fmt"
 	"go-microservice-product-porto/app/models"
-	"regexp"
 	"strings"
 )
 
@@ -15,9 +14,6 @@ type ProductValidator struct {
 // Validate runs all validation rules for the Product
 func (v *ProductValidator) Validate() error {
 	if err := v.validateName(); err != nil {
-		return err
-	}
-	if err := v.validateSKU(); err != nil {
 		return err
 	}
 	if err := v.validatePrice(); err != nil {
@@ -51,22 +47,6 @@ func (v *ProductValidator) validateName() error {
 
 	if len(v.Product.Name) > 100 {
 		return fmt.Errorf("name must be at most 100 characters long")
-	}
-
-	return nil
-}
-
-// validateSKU checks if the SKU format is valid
-func (v *ProductValidator) validateSKU() error {
-	if v.Product.SKU == "" {
-		return fmt.Errorf("sku is required")
-	}
-
-	// SKU format: PRD-12345678
-	skuPattern := `^PRD-\d{8}$`
-	match, _ := regexp.MatchString(skuPattern, v.Product.SKU)
-	if !match {
-		return fmt.Errorf("invalid SKU format. Must be PRD-XXXXXXXX where X is a digit")
 	}
 
 	return nil
