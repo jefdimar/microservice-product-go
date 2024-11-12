@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"go-microservice-product-porto/app/handlers"
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/usecase"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,16 +31,20 @@ func NewProductController(usecase *usecase.ProductUsecase) *ProductController {
 func (c *ProductController) Create(ctx *gin.Context) {
 	var product models.Product
 	if err := ctx.ShouldBindJSON(&product); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handlers.BadRequestResponse(ctx, err.Error())
 		return
 	}
 
 	if err := c.business.CreateProduct(&product); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if strings.Contains(err.Error(), "validation") {
+			handlers.ValidationErrorResponse(ctx, err.Error())
+			return
+		}
+		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, product)
+	handlers.SuccessResponse(ctx, http.StatusCreated, "Product created successfully", product)
 }
 
 // @Summary Get all products
@@ -52,11 +58,11 @@ func (c *ProductController) Create(ctx *gin.Context) {
 func (c *ProductController) GetAll(ctx *gin.Context) {
 	products, err := c.business.GetAllProducts()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, products)
+	handlers.SuccessResponse(ctx, http.StatusOK, "Products retrieved successfully", products)
 }
 
 // @Summary Get product by ID
@@ -73,11 +79,15 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	product, err := c.business.GetProductByID(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+		if err.Error() == "mongo: no documents in result" {
+			handlers.NotFoundResponse(ctx, "Product not found")
+			return
+		}
+		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, product)
+	handlers.SuccessResponse(ctx, http.StatusOK, "Product retrieved successfully", product)
 }
 
 // @Summary Update a product
@@ -96,16 +106,30 @@ func (c *ProductController) Update(ctx *gin.Context) {
 	var product models.Product
 
 	if err := ctx.ShouldBindJSON(&product); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handlers.BadRequestResponse(ctx, err.Error())
+		return
+	}
+
+	_, err := c.business.GetProductByID(id)
+	if err != nil {
+		if err.Error() == "mongo: no documents in result" {
+			handlers.NotFoundResponse(ctx, "Product not found")
+			return
+		}
+		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
 	if err := c.business.UpdateProduct(id, &product); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Product not found"})
+		if strings.Contains(err.Error(), "validation") {
+			handlers.ValidationErrorResponse(ctx, err.Error())
+			return
+		}
+		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Product updated successfully"})
+	handlers.SuccessResponse(ctx, http.StatusOK, "Product updated successfully", product)
 }
 
 // @Summary Delete a product
@@ -122,9 +146,13 @@ func (c *ProductController) Delete(ctx *gin.Context) {
 
 	err := c.business.DeleteProduct(id)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Product not found"})
+		if err.Error() == "mongo: no documents in result" {
+			handlers.NotFoundResponse(ctx, "Product not found")
+			return
+		}
+		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "Product deleted successfully"})
+	handlers.SuccessResponse(ctx, http.StatusOK, "Product deleted successfully", nil)
 }
