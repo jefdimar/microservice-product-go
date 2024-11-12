@@ -3,6 +3,7 @@ package usecase
 import (
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/repositories"
+	"go-microservice-product-porto/app/validation"
 )
 
 type ProductUsecase struct {
@@ -14,6 +15,10 @@ func NewProductUsecase(repo *repositories.ProductRepository) *ProductUsecase {
 }
 
 func (b *ProductUsecase) CreateProduct(product *models.Product) error {
+	validator := validation.NewProductValidator(product)
+	if err := validator.Validate(); err != nil {
+		return err
+	}
 	return b.repo.CreateInMongo(product)
 }
 
@@ -26,6 +31,10 @@ func (b *ProductUsecase) GetProductByID(id string) (*models.Product, error) {
 }
 
 func (b *ProductUsecase) UpdateProduct(id string, product *models.Product) error {
+	validator := validation.NewProductValidator(product)
+	if err := validator.Validate(); err != nil {
+		return err
+	}
 	return b.repo.UpdateInMongo(id, product)
 }
 
