@@ -4,6 +4,7 @@ import (
 	"go-microservice-product-porto/app/handlers"
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/usecase"
+	"go-microservice-product-porto/app/validation"
 	"net/http"
 	"strings"
 
@@ -56,6 +57,17 @@ func (c *ProductController) Create(ctx *gin.Context) {
 // @Failure 500 {object} map[string]interface{}
 // @Router /products [get]
 func (c *ProductController) GetAll(ctx *gin.Context) {
+	params := &validation.QueryParams{
+		Page:     ctx.GetInt("page"),
+		PageSize: ctx.GetInt("pageSize"),
+		SortBy:   ctx.GetString("sortBy"),
+		SortDir:  ctx.GetString("sortDir"),
+	}
+
+	if err := validation.ValidateQueryParams(params); err != nil {
+		handlers.ValidationErrorResponse(ctx, err.Error())
+		return
+	}
 	products, err := c.business.GetAllProducts()
 	if err != nil {
 		handlers.InternalServerErrorResponse(ctx, err.Error())
@@ -77,6 +89,11 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 // @Router /products/{id} [get]
 func (c *ProductController) GetByID(ctx *gin.Context) {
 	id := ctx.Param("id")
+	if err := validation.ValidateObjectID(id); err != nil {
+		handlers.BadRequestResponse(ctx, err.Error())
+		return
+	}
+
 	product, err := c.business.GetProductByID(id)
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
@@ -103,6 +120,10 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 // @Router /products/{id} [put]
 func (c *ProductController) Update(ctx *gin.Context) {
 	id := ctx.Param("id")
+	if err := validation.ValidateObjectID(id); err != nil {
+		handlers.BadRequestResponse(ctx, err.Error())
+		return
+	}
 	var product models.Product
 
 	if err := ctx.ShouldBindJSON(&product); err != nil {
@@ -143,6 +164,10 @@ func (c *ProductController) Update(ctx *gin.Context) {
 // @Router /products/{id} [delete]
 func (c *ProductController) Delete(ctx *gin.Context) {
 	id := ctx.Param("id")
+	if err := validation.ValidateObjectID(id); err != nil {
+		handlers.BadRequestResponse(ctx, err.Error())
+		return
+	}
 
 	err := c.business.DeleteProduct(id)
 	if err != nil {
