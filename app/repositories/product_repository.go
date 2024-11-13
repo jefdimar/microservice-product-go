@@ -63,10 +63,22 @@ func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 	return err
 }
 
-func (r *ProductRepository) FindAllInMongo() ([]models.Product, error) {
+func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir string) ([]models.Product, error) {
 	var products []models.Product
 
-	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	skip := (page - 1) * pageSize
+
+	sortValue := 1
+	if sortDir == "desc" {
+		sortValue = -1
+	}
+
+	opts := options.Find().
+		SetSkip(int64(skip)).
+		SetLimit(int64(pageSize)).
+		SetSort(bson.D{{Key: sortBy, Value: sortValue}})
+
+	// opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
 	cursor, err := r.mongoCollection.Find(context.Background(), bson.M{}, opts)
 	if err != nil {
 		return nil, err
@@ -110,10 +122,11 @@ func (r *ProductRepository) UpdateInMongo(idString string, product *models.Produ
 
 	update := bson.M{
 		"$set": bson.M{
-			"name":        product.Name,
-			"price":       product.Price,
-			"description": product.Description,
-			"updated_at":  time.Now(),
+			"name":            product.Name,
+			"price":           product.Price,
+			"description":     product.Description,
+			"formatted_price": helpers.FormatPrice(product.Price),
+			"updated_at":      time.Now(),
 		},
 	}
 

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"go-microservice-product-porto/app/handlers"
+	"go-microservice-product-porto/app/helpers"
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/usecase"
 	"go-microservice-product-porto/app/validation"
@@ -58,17 +59,17 @@ func (c *ProductController) Create(ctx *gin.Context) {
 // @Router /products [get]
 func (c *ProductController) GetAll(ctx *gin.Context) {
 	params := &validation.QueryParams{
-		Page:     ctx.GetInt("page"),
-		PageSize: ctx.GetInt("pageSize"),
-		SortBy:   ctx.GetString("sortBy"),
-		SortDir:  ctx.GetString("sortDir"),
+		Page:     helpers.ParseInt(ctx.Query("page"), 1),
+		PageSize: helpers.ParseInt(ctx.Query("pageSize"), 10),
+		SortBy:   ctx.Query("sortBy"),
+		SortDir:  ctx.Query("sortDir"),
 	}
 
 	if err := validation.ValidateQueryParams(params); err != nil {
 		handlers.ValidationErrorResponse(ctx, err.Error())
 		return
 	}
-	products, err := c.business.GetAllProducts()
+	products, err := c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir)
 	if err != nil {
 		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return

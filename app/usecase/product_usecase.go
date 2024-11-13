@@ -22,8 +22,8 @@ func (b *ProductUsecase) CreateProduct(product *models.Product) error {
 	return b.repo.CreateInMongo(product)
 }
 
-func (b *ProductUsecase) GetAllProducts() ([]models.Product, error) {
-	return b.repo.FindAllInMongo()
+func (b *ProductUsecase) GetAllProducts(page, pageSize int, sortBy, sortDir string) ([]models.Product, error) {
+	return b.repo.FindAllInMongo(page, pageSize, sortBy, sortDir)
 }
 
 func (b *ProductUsecase) GetProductByID(id string) (*models.Product, error) {
