@@ -28,6 +28,7 @@ func NewProductController(usecase *usecase.ProductUsecase) *ProductController {
 // @Param product body models.Product true "Create product"
 // @Success 201 {object} models.Product
 // @Failure 400 {object} map[string]interface{}
+// @Failure 422 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /products [post]
 func (c *ProductController) Create(ctx *gin.Context) {
@@ -50,11 +51,16 @@ func (c *ProductController) Create(ctx *gin.Context) {
 }
 
 // @Summary Get all products
-// @Description Get a list of all products
+// @Description Get a list of all products with pagination and sorting
 // @Tags products
 // @Accept json
 // @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param pageSize query int false "Items per page (default: 10)"
+// @Param sortBy query string false "Sort field (name, price, created_at, updated_at)"
+// @Param sortDir query string false "Sort direction (asc, desc)"
 // @Success 200 {array} models.Product
+// @Failure 422 {object} map[string]interface{}
 // @Failure 500 {object} map[string]interface{}
 // @Router /products [get]
 func (c *ProductController) GetAll(ctx *gin.Context) {
@@ -83,10 +89,11 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param id path string true "Product ID"
+// @Param id path string true "Product ID (MongoDB ObjectID)"
 // @Success 200 {object} models.Product
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
 // @Router /products/{id} [get]
 func (c *ProductController) GetByID(ctx *gin.Context) {
 	id := ctx.Param("id")
@@ -113,11 +120,13 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param id path string true "Product ID"
+// @Param id path string true "Product ID (MongoDB ObjectID)"
 // @Param product body models.Product true "Update product"
 // @Success 200 {object} models.Product
 // @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
+// @Failure 422 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
 // @Router /products/{id} [put]
 func (c *ProductController) Update(ctx *gin.Context) {
 	id := ctx.Param("id")
@@ -159,9 +168,11 @@ func (c *ProductController) Update(ctx *gin.Context) {
 // @Tags products
 // @Accept json
 // @Produce json
-// @Param id path string true "Product ID"
+// @Param id path string true "Product ID (MongoDB ObjectID)"
 // @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
 // @Failure 404 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
 // @Router /products/{id} [delete]
 func (c *ProductController) Delete(ctx *gin.Context) {
 	id := ctx.Param("id")
