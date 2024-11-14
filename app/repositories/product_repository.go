@@ -74,6 +74,11 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 	filterQuery := bson.M{}
 	for key, value := range filters {
 		switch key {
+		case "search":
+			filterQuery["$or"] = []bson.M{
+				{"name": bson.M{"$regex": value.(string), "$options": "i"}},
+				{"description": bson.M{"$regex": value.(string), "$options": "i"}},
+			}
 		case "name":
 			filterQuery["name"] = bson.M{"$regex": value.(string), "$options": "i"}
 		case "price_min":

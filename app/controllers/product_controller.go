@@ -74,6 +74,10 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 
 	filters := make(map[string]interface{})
 
+	if search := ctx.Query("search"); search != "" {
+		filters["search"] = search
+	}
+
 	if name := ctx.Query("name"); name != "" {
 		filters["name"] = name
 	}
