@@ -67,10 +67,27 @@ func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 	return err
 }
 
-func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir string) ([]models.Product, error) {
+func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) ([]models.Product, error) {
 	var products []models.Product
-
 	skip := (page - 1) * pageSize
+
+	filterQuery := bson.M{}
+	for key, value := range filters {
+		switch key {
+		case "name":
+			filterQuery["name"] = bson.M{"$regex": value.(string), "$options": "i"}
+		case "price_min":
+			filterQuery["price"] = bson.M{"$gte": value.(float64)}
+		case "price_max":
+			if _, exists := filterQuery["price"]; exists {
+				filterQuery["price"].(bson.M)["$lte"] = value.(float64)
+			} else {
+				filterQuery["price"] = bson.M{"$lte": value.(float64)}
+			}
+		case "is_active":
+			filterQuery["is_active"] = value.(bool)
+		}
+	}
 
 	sortValue := 1
 	if sortDir == "desc" {
@@ -83,7 +100,7 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 		SetSort(bson.D{{Key: sortBy, Value: sortValue}})
 
 	// opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
-	cursor, err := r.mongoCollection.Find(context.Background(), bson.M{}, opts)
+	cursor, err := r.mongoCollection.Find(context.Background(), filterQuery, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +140,7 @@ func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, e
 	r.cacheService.Set("product:"+idString, &mongoProduct)
 
 	return &mongoProduct, nil
+
 }
 func (r *ProductRepository) UpdateInMongo(idString string, product *models.Product) error {
 	objectId, err := primitive.ObjectIDFromHex(idString)

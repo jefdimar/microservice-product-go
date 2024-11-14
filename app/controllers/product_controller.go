@@ -7,6 +7,7 @@ import (
 	"go-microservice-product-porto/app/usecase"
 	"go-microservice-product-porto/app/validation"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -71,11 +72,35 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 		SortDir:  ctx.Query("sortDir"),
 	}
 
+	filters := make(map[string]interface{})
+
+	if name := ctx.Query("name"); name != "" {
+		filters["name"] = name
+	}
+
+	if minPrice := ctx.Query("price_min"); minPrice != "" {
+		if price, err := strconv.ParseFloat(minPrice, 64); err == nil {
+			filters["price_min"] = price
+		}
+	}
+
+	if maxPrice := ctx.Query("price_max"); maxPrice != "" {
+		if price, err := strconv.ParseFloat(maxPrice, 64); err == nil {
+			filters["price_max"] = price
+		}
+	}
+
+	if isActive := ctx.Query("is_active"); isActive != "" {
+		if active, err := strconv.ParseBool(isActive); err == nil {
+			filters["is_active"] = active
+		}
+	}
+
 	if err := validation.ValidateQueryParams(params); err != nil {
 		handlers.ValidationErrorResponse(ctx, err.Error())
 		return
 	}
-	products, err := c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir)
+	products, err := c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir, filters)
 	if err != nil {
 		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
