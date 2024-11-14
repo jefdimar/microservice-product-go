@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,30 +75,62 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 
 	filters := make(map[string]interface{})
 
+	// Search filter
 	if search := ctx.Query("search"); search != "" {
 		filters["search"] = search
 	}
 
+	// Name filter
 	if name := ctx.Query("name"); name != "" {
 		filters["name"] = name
 	}
 
+	// Price range filter
 	if minPrice := ctx.Query("price_min"); minPrice != "" {
 		if price, err := strconv.ParseFloat(minPrice, 64); err == nil {
 			filters["price_min"] = price
 		}
 	}
-
 	if maxPrice := ctx.Query("price_max"); maxPrice != "" {
 		if price, err := strconv.ParseFloat(maxPrice, 64); err == nil {
 			filters["price_max"] = price
 		}
 	}
 
+	// Date range filter
+	if startDate := ctx.Query("start_date"); startDate != "" {
+		if date, err := time.Parse(time.RFC3339, startDate); err == nil {
+			filters["start_date"] = date
+		}
+	}
+	if endDate := ctx.Query("end_date"); endDate != "" {
+		if date, err := time.Parse(time.RFC3339, endDate); err == nil {
+			filters["end_date"] = date
+		}
+	}
+
+	// Stock filter
+	if minStock := ctx.Query("stock_min"); minStock != "" {
+		if stock, err := strconv.Atoi(minStock); err == nil {
+			filters["stock_min"] = stock
+		}
+	}
+	if maxStock := ctx.Query("stock_max"); maxStock != "" {
+		if stock, err := strconv.Atoi(maxStock); err == nil {
+			filters["stock_max"] = stock
+		}
+	}
+
+	// Active status filter
 	if isActive := ctx.Query("is_active"); isActive != "" {
 		if active, err := strconv.ParseBool(isActive); err == nil {
 			filters["is_active"] = active
 		}
+	}
+
+	// SKU filter
+	if sku := ctx.Query("sku"); sku != "" {
+		filters["sku"] = sku
 	}
 
 	if err := validation.ValidateQueryParams(params); err != nil {

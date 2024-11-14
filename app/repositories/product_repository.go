@@ -72,15 +72,19 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 	skip := (page - 1) * pageSize
 
 	filterQuery := bson.M{}
+
 	for key, value := range filters {
 		switch key {
 		case "search":
 			filterQuery["$or"] = []bson.M{
 				{"name": bson.M{"$regex": value.(string), "$options": "i"}},
 				{"description": bson.M{"$regex": value.(string), "$options": "i"}},
+				{"sku": bson.M{"$regex": value.(string), "$options": "i"}},
 			}
 		case "name":
 			filterQuery["name"] = bson.M{"$regex": value.(string), "$options": "i"}
+		case "sku":
+			filterQuery["sku"] = bson.M{"$regex": value.(string), "$options": "i"}
 		case "price_min":
 			filterQuery["price"] = bson.M{"$gte": value.(float64)}
 		case "price_max":
@@ -88,6 +92,22 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 				filterQuery["price"].(bson.M)["$lte"] = value.(float64)
 			} else {
 				filterQuery["price"] = bson.M{"$lte": value.(float64)}
+			}
+		case "start_date":
+			filterQuery["created_at"] = bson.M{"$gte": value.(time.Time)}
+		case "end_date":
+			if _, exists := filterQuery["created_at"]; exists {
+				filterQuery["created_at"].(bson.M)["$lte"] = value.(time.Time)
+			} else {
+				filterQuery["created_at"] = bson.M{"$lte": value.(time.Time)}
+			}
+		case "stock_min":
+			filterQuery["stock"] = bson.M{"$gte": value.(int)}
+		case "stock_max":
+			if _, exists := filterQuery["stock"]; exists {
+				filterQuery["stock"].(bson.M)["$lte"] = value.(int)
+			} else {
+				filterQuery["stock"] = bson.M{"$lte": value.(int)}
 			}
 		case "is_active":
 			filterQuery["is_active"] = value.(bool)
@@ -103,8 +123,6 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 		SetSkip(int64(skip)).
 		SetLimit(int64(pageSize)).
 		SetSort(bson.D{{Key: sortBy, Value: sortValue}})
-
-	// opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
 	cursor, err := r.mongoCollection.Find(context.Background(), filterQuery, opts)
 	if err != nil {
 		return nil, err
@@ -190,6 +208,7 @@ func (r *ProductRepository) DeleteInMongo(idString string) error {
 }
 
 func (r *ProductRepository) CountDocuments(filters map[string]interface{}) (int64, error) {
+	// Use the same filter logic as FindAllInMongo
 	filterQuery := bson.M{}
 	for key, value := range filters {
 		switch key {
@@ -197,9 +216,12 @@ func (r *ProductRepository) CountDocuments(filters map[string]interface{}) (int6
 			filterQuery["$or"] = []bson.M{
 				{"name": bson.M{"$regex": value.(string), "$options": "i"}},
 				{"description": bson.M{"$regex": value.(string), "$options": "i"}},
+				{"sku": bson.M{"$regex": value.(string), "$options": "i"}},
 			}
 		case "name":
 			filterQuery["name"] = bson.M{"$regex": value.(string), "$options": "i"}
+		case "sku":
+			filterQuery["sku"] = bson.M{"$regex": value.(string), "$options": "i"}
 		case "price_min":
 			filterQuery["price"] = bson.M{"$gte": value.(float64)}
 		case "price_max":
@@ -208,9 +230,26 @@ func (r *ProductRepository) CountDocuments(filters map[string]interface{}) (int6
 			} else {
 				filterQuery["price"] = bson.M{"$lte": value.(float64)}
 			}
+		case "start_date":
+			filterQuery["created_at"] = bson.M{"$gte": value.(time.Time)}
+		case "end_date":
+			if _, exists := filterQuery["created_at"]; exists {
+				filterQuery["created_at"].(bson.M)["$lte"] = value.(time.Time)
+			} else {
+				filterQuery["created_at"] = bson.M{"$lte": value.(time.Time)}
+			}
+		case "stock_min":
+			filterQuery["stock"] = bson.M{"$gte": value.(int)}
+		case "stock_max":
+			if _, exists := filterQuery["stock"]; exists {
+				filterQuery["stock"].(bson.M)["$lte"] = value.(int)
+			} else {
+				filterQuery["stock"] = bson.M{"$lte": value.(int)}
+			}
 		case "is_active":
 			filterQuery["is_active"] = value.(bool)
 		}
 	}
+
 	return r.mongoCollection.CountDocuments(context.Background(), filterQuery)
 }
