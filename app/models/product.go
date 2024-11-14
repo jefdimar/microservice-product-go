@@ -1,6 +1,7 @@
 package models
 
 import (
+	"go-microservice-product-porto/app/helpers"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,42 +32,46 @@ type MongoProduct struct {
 }
 
 type Product struct {
-	ID             interface{} `json:"id"`
-	SKU            string      `json:"sku"`
-	Name           string      `json:"name"`
-	Description    string      `json:"description"`
-	Price          float64     `json:"price"`
-	FormattedPrice string      `json:"formatted_price"`
-	Stock          int         `json:"stock"`
-	IsActive       bool        `json:"is_active"`
-	CreatedAt      time.Time   `json:"created_at"`
-	UpdatedAt      time.Time   `json:"updated_at"`
+	ID                 interface{} `json:"id"`
+	SKU                string      `json:"sku"`
+	Name               string      `json:"name"`
+	Description        string      `json:"description"`
+	Price              float64     `json:"price"`
+	FormattedPrice     string      `json:"formatted_price"`
+	Stock              int         `json:"stock"`
+	IsActive           bool        `json:"is_active"`
+	CreatedAt          time.Time   `json:"-"` // Hide the original field
+	UpdatedAt          time.Time   `json:"-"` // Hide the original field
+	FormattedCreatedAt string      `json:"created_at"`
+	FormattedUpdatedAt string      `json:"updated_at"`
 }
 
 func (p PostgresProduct) ToCommon() Product {
 	return Product{
-		ID:          p.ID,
-		SKU:         p.SKU,
-		Name:        p.Name,
-		Description: p.Description,
-		Price:       p.Price,
-		Stock:       p.Stock,
-		IsActive:    p.IsActive,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+
+		ID:                 p.ID,
+		SKU:                p.SKU,
+		Name:               p.Name,
+		Description:        p.Description,
+		Price:              p.Price,
+		Stock:              p.Stock,
+		IsActive:           p.IsActive,
+		FormattedCreatedAt: helpers.FormatDateTime(p.CreatedAt),
+		FormattedUpdatedAt: helpers.FormatDateTime(p.UpdatedAt),
 	}
 }
 
 func (p MongoProduct) ToCommon() Product {
 	return Product{
-		ID:          p.ID,
-		SKU:         p.SKU,
-		Name:        p.Name,
-		Description: p.Description,
-		Price:       p.Price,
-		Stock:       p.Stock,
-		IsActive:    p.IsActive,
-		CreatedAt:   p.CreatedAt,
-		UpdatedAt:   p.UpdatedAt,
+
+		ID:                 p.ID,
+		SKU:                p.SKU,
+		Name:               p.Name,
+		Description:        p.Description,
+		Price:              p.Price,
+		Stock:              p.Stock,
+		IsActive:           p.IsActive,
+		FormattedCreatedAt: helpers.FormatDateTime(p.CreatedAt),
+		FormattedUpdatedAt: helpers.FormatDateTime(p.UpdatedAt),
 	}
 }

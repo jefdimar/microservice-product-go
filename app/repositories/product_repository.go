@@ -135,6 +135,8 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 
 	for i := range products {
 		products[i].FormattedPrice = helpers.FormatPrice(products[i].Price)
+		products[i].FormattedCreatedAt = helpers.FormatDateTime(products[i].CreatedAt)
+		products[i].FormattedUpdatedAt = helpers.FormatDateTime(products[i].UpdatedAt)
 	}
 
 	return products, err
@@ -159,12 +161,15 @@ func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, e
 	}
 
 	mongoProduct.FormattedPrice = helpers.FormatPrice(mongoProduct.Price)
+	mongoProduct.FormattedCreatedAt = helpers.FormatDateTime(mongoProduct.CreatedAt)
+	mongoProduct.FormattedUpdatedAt = helpers.FormatDateTime(mongoProduct.UpdatedAt)
 
 	r.cacheService.Set("product:"+idString, &mongoProduct)
 
 	return &mongoProduct, nil
 
 }
+
 func (r *ProductRepository) UpdateInMongo(idString string, product *models.Product) error {
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {

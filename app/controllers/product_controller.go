@@ -97,14 +97,19 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 		}
 	}
 
-	// Date range filter
+	// Date range filter with format "02-Jan-2006"
 	if startDate := ctx.Query("start_date"); startDate != "" {
-		if date, err := time.Parse(time.RFC3339, startDate); err == nil {
+		if date, err := time.Parse("02-Jan-2006", startDate); err == nil {
+			// Set to start of day
+			date = time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
 			filters["start_date"] = date
 		}
 	}
+
 	if endDate := ctx.Query("end_date"); endDate != "" {
-		if date, err := time.Parse(time.RFC3339, endDate); err == nil {
+		if date, err := time.Parse("02-Jan-2006", endDate); err == nil {
+			// Set to end of day
+			date = time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 999999999, time.UTC)
 			filters["end_date"] = date
 		}
 	}
