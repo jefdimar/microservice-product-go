@@ -188,3 +188,29 @@ func (r *ProductRepository) DeleteInMongo(idString string) error {
 
 	return nil
 }
+
+func (r *ProductRepository) CountDocuments(filters map[string]interface{}) (int64, error) {
+	filterQuery := bson.M{}
+	for key, value := range filters {
+		switch key {
+		case "search":
+			filterQuery["$or"] = []bson.M{
+				{"name": bson.M{"$regex": value.(string), "$options": "i"}},
+				{"description": bson.M{"$regex": value.(string), "$options": "i"}},
+			}
+		case "name":
+			filterQuery["name"] = bson.M{"$regex": value.(string), "$options": "i"}
+		case "price_min":
+			filterQuery["price"] = bson.M{"$gte": value.(float64)}
+		case "price_max":
+			if _, exists := filterQuery["price"]; exists {
+				filterQuery["price"].(bson.M)["$lte"] = value.(float64)
+			} else {
+				filterQuery["price"] = bson.M{"$lte": value.(float64)}
+			}
+		case "is_active":
+			filterQuery["is_active"] = value.(bool)
+		}
+	}
+	return r.mongoCollection.CountDocuments(context.Background(), filterQuery)
+}

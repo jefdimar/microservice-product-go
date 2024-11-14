@@ -104,13 +104,13 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 		handlers.ValidationErrorResponse(ctx, err.Error())
 		return
 	}
-	products, err := c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir, filters)
+	paginatedResponse, err := c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir, filters)
 	if err != nil {
 		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	handlers.SuccessResponse(ctx, http.StatusOK, "Products retrieved successfully", products)
+	handlers.SuccessResponse(ctx, http.StatusOK, "Products retrieved successfully", paginatedResponse)
 }
 
 // @Summary Get product by ID
