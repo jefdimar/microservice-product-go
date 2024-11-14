@@ -4,6 +4,7 @@ import (
 	"context"
 	"go-microservice-product-porto/app/helpers"
 	"go-microservice-product-porto/app/models"
+	"go-microservice-product-porto/app/services"
 	"go-microservice-product-porto/config"
 	"time"
 
@@ -17,12 +18,15 @@ import (
 type ProductRepository struct {
 	postgresDB      *gorm.DB
 	mongoCollection *mongo.Collection
+	cacheService    *services.CacheService
 }
 
 func NewProductRepository() *ProductRepository {
+	cacheService := services.NewCacheService(config.DBConn.Redis)
 	return &ProductRepository{
 		mongoCollection: config.DBConn.MongoDB.Collection("products"),
 		postgresDB:      config.DBConn.PostgreDB,
+		cacheService:    cacheService,
 	}
 }
 
@@ -97,23 +101,29 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 }
 
 func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, error) {
-	var product models.Product
+	product, err := r.cacheService.Get("product:" + idString)
+	if err == nil {
+		return product, nil
+	}
+
+	var mongoProduct models.Product
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return nil, err
 	}
 
 	filter := bson.M{"id": objectId}
-	err = r.mongoCollection.FindOne(context.Background(), filter).Decode(&product)
+	err = r.mongoCollection.FindOne(context.Background(), filter).Decode(&mongoProduct)
 	if err != nil {
 		return nil, err
 	}
 
-	product.FormattedPrice = helpers.FormatPrice(product.Price)
+	mongoProduct.FormattedPrice = helpers.FormatPrice(mongoProduct.Price)
 
-	return &product, nil
+	r.cacheService.Set("product:"+idString, &mongoProduct)
+
+	return &mongoProduct, nil
 }
-
 func (r *ProductRepository) UpdateInMongo(idString string, product *models.Product) error {
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
@@ -150,6 +160,8 @@ func (r *ProductRepository) DeleteInMongo(idString string) error {
 	if result.DeletedCount == 0 {
 		return mongo.ErrNoDocuments
 	}
+
+	r.cacheService.Delete("product:" + idString)
 
 	return nil
 }

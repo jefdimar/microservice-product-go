@@ -34,8 +34,6 @@ func SetupRoutes(r *gin.Engine) {
 
 	// Initialize controller
 	productController := controllers.NewProductController(productUsecase)
-
-	// API Routes
 	api := r.Group("/api")
 	{
 		products := api.Group("/products")

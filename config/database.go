@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
@@ -8,6 +9,7 @@ import (
 type DBConnections struct {
 	MongoDB   *mongo.Database
 	PostgreDB *gorm.DB
+	Redis     *redis.Client
 }
 
 var DBConn DBConnections
@@ -26,6 +28,10 @@ func InitDatabases(cfg *Config) error {
 		return postgresErr
 	}
 	DBConn.PostgreDB = postgresDB
+
+	// Initialize Redis
+	redisClient := InitRedis()
+	DBConn.Redis = redisClient
 
 	return nil
 }
