@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 )
 
 type ProductController struct {
@@ -142,10 +143,20 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 		handlers.ValidationErrorResponse(ctx, err.Error())
 		return
 	}
+
 	paginatedResponse, err := c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir, filters)
 	if err != nil {
-		handlers.InternalServerErrorResponse(ctx, err.Error())
-		return
+		if err == redis.Nil {
+			// Cache miss - fetch from database
+			paginatedResponse, err = c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir, filters)
+			if err != nil {
+				handlers.InternalServerErrorResponse(ctx, err.Error())
+				return
+			}
+		} else {
+			handlers.InternalServerErrorResponse(ctx, err.Error())
+			return
+		}
 	}
 
 	handlers.SuccessResponse(ctx, http.StatusOK, "Products retrieved successfully", paginatedResponse)
@@ -171,12 +182,26 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 
 	product, err := c.business.GetProductByID(id)
 	if err != nil {
-		if err.Error() == "mongo: no documents in result" {
+		// Handle cache miss specifically
+		if err == redis.Nil {
+			// Cache miss - continue with database lookup
+			product, err = c.business.GetProductByID(id)
+			if err != nil {
+				if err.Error() == "mongo: no documents in result" {
+					handlers.NotFoundResponse(ctx, "Product not found")
+					return
+				}
+				handlers.InternalServerErrorResponse(ctx, err.Error())
+				return
+			}
+		} else if err.Error() == "mongo: no documents in result" {
 			handlers.NotFoundResponse(ctx, "Product not found")
 			return
+		} else {
+			handlers.InternalServerErrorResponse(ctx, err.Error())
+			return
 		}
-		handlers.InternalServerErrorResponse(ctx, err.Error())
-		return
+
 	}
 
 	handlers.SuccessResponse(ctx, http.StatusOK, "Product retrieved successfully", product)
