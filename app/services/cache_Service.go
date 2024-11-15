@@ -45,3 +45,34 @@ func (s *CacheService) Set(key string, product *models.Product) error {
 func (s *CacheService) Delete(key string) error {
 	return s.client.Del(context.Background(), key).Err()
 }
+
+func (c *CacheService) GetList(key string) (*models.PaginatedResponse, error) {
+	val, err := c.client.Get(context.Background(), key).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	var response models.PaginatedResponse
+	err = json.Unmarshal([]byte(val), &response)
+	return &response, err
+}
+
+func (c *CacheService) SetList(key string, value *models.PaginatedResponse) error {
+	json, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	return c.client.Set(context.Background(), key, json, 5*time.Minute).Err()
+}
+
+func (c *CacheService) DeletePattern(pattern string) error {
+	iter := c.client.Scan(context.Background(), 0, pattern, 0).Iterator()
+	for iter.Next(context.Background()) {
+		err := c.client.Del(context.Background(), iter.Val()).Err()
+		if err != nil {
+			return err
+		}
+	}
+	return iter.Err()
+}

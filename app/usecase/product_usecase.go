@@ -15,19 +15,7 @@ func NewProductUsecase(repo *repositories.ProductRepository) *ProductUsecase {
 	return &ProductUsecase{repo}
 }
 
-type PaginatedResponse struct {
-	Data       []models.Product `json:"data"`
-	Pagination PaginationMeta   `json:"pagination"`
-}
-
-type PaginationMeta struct {
-	CurrentPage int   `json:"current_page"`
-	PageSize    int   `json:"page_size"`
-	TotalItems  int64 `json:"total_items"`
-	TotalPages  int   `json:"total_pages"`
-}
-
-func (b *ProductUsecase) GetAllProducts(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) (*PaginatedResponse, error) {
+func (b *ProductUsecase) GetAllProducts(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) (*models.PaginatedResponse, error) {
 	products, err := b.repo.FindAllInMongo(page, pageSize, sortBy, sortDir, filters)
 	if err != nil {
 		return nil, err
@@ -40,9 +28,9 @@ func (b *ProductUsecase) GetAllProducts(page, pageSize int, sortBy, sortDir stri
 
 	totalPages := int(math.Ceil(float64(totalItems) / float64(pageSize)))
 
-	return &PaginatedResponse{
+	return &models.PaginatedResponse{
 		Data: products,
-		Pagination: PaginationMeta{
+		Pagination: models.PaginationMeta{
 			CurrentPage: page,
 			PageSize:    pageSize,
 			TotalItems:  totalItems,
@@ -56,7 +44,12 @@ func (b *ProductUsecase) CreateProduct(product *models.Product) error {
 	if err := validator.Validate(); err != nil {
 		return err
 	}
-	return b.repo.CreateInMongo(product)
+
+	err := b.repo.CreateInMongo(product)
+	if err == nil {
+		b.repo.GetCacheService().DeletePattern("products:list:*")
+	}
+	return err
 }
 
 func (b *ProductUsecase) GetProductByID(id string) (*models.Product, error) {
@@ -68,9 +61,20 @@ func (b *ProductUsecase) UpdateProduct(id string, product *models.Product) error
 	if err := validator.Validate(); err != nil {
 		return err
 	}
-	return b.repo.UpdateInMongo(id, product)
+
+	err := b.repo.UpdateInMongo(id, product)
+	if err == nil {
+		b.repo.GetCacheService().Delete("product:" + id)
+		b.repo.GetCacheService().DeletePattern("products:list:*")
+	}
+	return err
 }
 
 func (b *ProductUsecase) DeleteProduct(id string) error {
-	return b.repo.DeleteInMongo(id)
+	err := b.repo.DeleteInMongo(id)
+	if err == nil {
+		b.repo.GetCacheService().Delete("product:" + id)
+		b.repo.GetCacheService().DeletePattern("products:list:*")
+	}
+	return err
 }

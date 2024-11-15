@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"fmt"
 	"go-microservice-product-porto/app/helpers"
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/services"
@@ -28,6 +29,10 @@ func NewProductRepository() *ProductRepository {
 		postgresDB:      config.DBConn.PostgreDB,
 		cacheService:    cacheService,
 	}
+}
+
+func (r *ProductRepository) GetCacheService() *services.CacheService {
+	return r.cacheService
 }
 
 // PostgreSQL operations
@@ -68,6 +73,12 @@ func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 }
 
 func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) ([]models.Product, error) {
+	cacheKey := fmt.Sprintf("product:list:p%d:s%d:%s:%s:%v", page, pageSize, sortBy, sortDir, filters)
+
+	if cachedProducts, err := r.cacheService.GetList(cacheKey); err == nil {
+		return cachedProducts.Data, nil
+	}
+
 	var products []models.Product
 	skip := (page - 1) * pageSize
 
@@ -114,6 +125,18 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 		}
 	}
 
+	// Get total items count before pagination
+	totalItems, err := r.CountDocuments(filters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total pages
+	totalPages := int(totalItems) / pageSize
+	if int(totalItems)%pageSize != 0 {
+		totalPages++
+	}
+
 	sortValue := 1
 	if sortDir == "desc" {
 		sortValue = -1
@@ -139,9 +162,18 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 		products[i].FormattedUpdatedAt = helpers.FormatDateTime(products[i].UpdatedAt)
 	}
 
+	r.cacheService.SetList(cacheKey, &models.PaginatedResponse{
+		Data: products,
+		Pagination: models.PaginationMeta{
+			CurrentPage: page,
+			PageSize:    pageSize,
+			TotalItems:  totalItems,
+			TotalPages:  totalPages,
+		},
+	})
+
 	return products, err
 }
-
 func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, error) {
 	product, err := r.cacheService.Get("product:" + idString)
 	if err == nil {
