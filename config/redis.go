@@ -4,11 +4,10 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func InitRedis() *redis.Client {
+func InitRedis(cfg *Config) *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     cfg.RedisHost + ":" + cfg.RedisPort,
+		Password: cfg.RedisPassword,
 		DB:       0,
 	})
-
 }

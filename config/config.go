@@ -22,6 +22,10 @@ type Config struct {
 	MongoUser     string
 	MongoPassword string
 	MongoDBName   string
+
+	RedisHost     string
+	RedisPort     string
+	RedisPassword string
 }
 
 func LoadConfig() (*Config, error) {
@@ -43,6 +47,9 @@ func LoadConfig() (*Config, error) {
 		MongoUser:        os.Getenv("MONGO_USER"),
 		MongoPassword:    os.Getenv("MONGO_PASSWORD"),
 		MongoDBName:      os.Getenv("MONGO_DB_NAME"),
+		RedisHost:        os.Getenv("REDIS_HOST"),
+		RedisPort:        os.Getenv("REDIS_PORT"),
+		RedisPassword:    os.Getenv("REDIS_PASSWORD"),
 	}
 
 	return config, nil

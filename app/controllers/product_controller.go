@@ -6,6 +6,7 @@ import (
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/usecase"
 	"go-microservice-product-porto/app/validation"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,10 +17,10 @@ import (
 )
 
 type ProductController struct {
-	business *usecase.ProductUsecase
+	business usecase.ProductUsecase
 }
 
-func NewProductController(usecase *usecase.ProductUsecase) *ProductController {
+func NewProductController(usecase usecase.ProductUsecase) *ProductController {
 	return &ProductController{usecase}
 }
 
@@ -49,6 +50,8 @@ func (c *ProductController) Create(ctx *gin.Context) {
 		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
+
+	c.business.InvalidateListCaches()
 
 	handlers.SuccessResponse(ctx, http.StatusCreated, "Product created successfully", product)
 }
@@ -252,6 +255,11 @@ func (c *ProductController) Update(ctx *gin.Context) {
 		return
 	}
 
+	// After successful update, invalidate related caches
+	if err := c.business.InvalidateRelatedCaches(id); err != nil {
+		log.Printf("Failed to invalidate cache: %v", err)
+	}
+
 	handlers.SuccessResponse(ctx, http.StatusOK, "Product updated successfully", product)
 }
 
@@ -281,6 +289,11 @@ func (c *ProductController) Delete(ctx *gin.Context) {
 		}
 		handlers.InternalServerErrorResponse(ctx, err.Error())
 		return
+	}
+
+	// After successful deletion, invalidate related caches
+	if err := c.business.InvalidateRelatedCaches(id); err != nil {
+		log.Printf("Failed to invalidate cache: %v", err)
 	}
 
 	handlers.SuccessResponse(ctx, http.StatusOK, "Product deleted successfully", nil)

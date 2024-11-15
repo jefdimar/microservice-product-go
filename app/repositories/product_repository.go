@@ -16,44 +16,44 @@ import (
 	"gorm.io/gorm"
 )
 
-type ProductRepository struct {
+type ProductRepositoryImpl struct {
 	postgresDB      *gorm.DB
 	mongoCollection *mongo.Collection
 	cacheService    *services.CacheService
 }
 
-func NewProductRepository() *ProductRepository {
+func NewProductRepository() *ProductRepositoryImpl {
 	cacheService := services.NewCacheService(config.DBConn.Redis)
-	return &ProductRepository{
+	return &ProductRepositoryImpl{
 		mongoCollection: config.DBConn.MongoDB.Collection("products"),
 		postgresDB:      config.DBConn.PostgreDB,
 		cacheService:    cacheService,
 	}
 }
 
-func (r *ProductRepository) GetCacheService() *services.CacheService {
+func (r *ProductRepositoryImpl) GetCacheService() *services.CacheService {
 	return r.cacheService
 }
 
 // PostgreSQL operations
-func (r *ProductRepository) CreateInPostgres(product *models.Product) error {
+func (r *ProductRepositoryImpl) CreateInPostgres(product *models.Product) error {
 	return r.postgresDB.Create(product).Error
 }
 
-func (r *ProductRepository) FindAllInPostgres() ([]models.Product, error) {
+func (r *ProductRepositoryImpl) FindAllInPostgres() ([]models.Product, error) {
 	var products []models.Product
 	err := r.postgresDB.Find(&products).Error
 	return products, err
 }
 
-func (r *ProductRepository) FindByIDInPostgres(id uint) (*models.Product, error) {
+func (r *ProductRepositoryImpl) FindByIDInPostgres(id uint) (*models.Product, error) {
 	var product models.Product
 	err := r.postgresDB.First(&product, id).Error
 	return &product, err
 }
 
 // MongoDB operations
-func (r *ProductRepository) CreateInMongo(product *models.Product) error {
+func (r *ProductRepositoryImpl) CreateInMongo(product *models.Product) error {
 	product.ID = primitive.NewObjectID()
 	product.SKU = helpers.GenerateSKU()
 	product.CreatedAt = time.Now()
@@ -69,10 +69,13 @@ func (r *ProductRepository) CreateInMongo(product *models.Product) error {
 	}
 
 	_, err := r.mongoCollection.InsertOne(context.Background(), product)
+	if err == nil {
+		r.cacheService.DeletePattern("product:list:*")
+	}
 	return err
 }
 
-func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) ([]models.Product, error) {
+func (r *ProductRepositoryImpl) FindAllInMongo(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) ([]models.Product, error) {
 	cacheKey := fmt.Sprintf("product:list:p%d:s%d:%s:%s:%v", page, pageSize, sortBy, sortDir, filters)
 
 	if cachedProducts, err := r.cacheService.GetList(cacheKey); err == nil {
@@ -174,7 +177,7 @@ func (r *ProductRepository) FindAllInMongo(page, pageSize int, sortBy, sortDir s
 
 	return products, err
 }
-func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, error) {
+func (r *ProductRepositoryImpl) FindByIDInMongo(idString string) (*models.Product, error) {
 	product, err := r.cacheService.Get("product:" + idString)
 	if err == nil {
 		return product, nil
@@ -202,7 +205,7 @@ func (r *ProductRepository) FindByIDInMongo(idString string) (*models.Product, e
 
 }
 
-func (r *ProductRepository) UpdateInMongo(idString string, product *models.Product) error {
+func (r *ProductRepositoryImpl) UpdateInMongo(idString string, product *models.Product) error {
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return err
@@ -223,7 +226,7 @@ func (r *ProductRepository) UpdateInMongo(idString string, product *models.Produ
 	return err
 }
 
-func (r *ProductRepository) DeleteInMongo(idString string) error {
+func (r *ProductRepositoryImpl) DeleteInMongo(idString string) error {
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return err
@@ -244,7 +247,7 @@ func (r *ProductRepository) DeleteInMongo(idString string) error {
 	return nil
 }
 
-func (r *ProductRepository) CountDocuments(filters map[string]interface{}) (int64, error) {
+func (r *ProductRepositoryImpl) CountDocuments(filters map[string]interface{}) (int64, error) {
 	// Use the same filter logic as FindAllInMongo
 	filterQuery := bson.M{}
 	for key, value := range filters {

@@ -30,7 +30,7 @@ func InitDatabases(cfg *Config) error {
 	DBConn.PostgreDB = postgresDB
 
 	// Initialize Redis
-	redisClient := InitRedis()
+	redisClient := InitRedis(cfg)
 	DBConn.Redis = redisClient
 
 	return nil

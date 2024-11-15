@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"go-microservice-product-porto/app/models"
 	"log"
 	"time"
@@ -12,13 +13,25 @@ import (
 )
 
 type CacheService struct {
-	client *redis.Client
+	client     *redis.Client
+	defaultTTL time.Duration
+	listTTL    time.Duration
 }
 
 func NewCacheService(client *redis.Client) *CacheService {
 	return &CacheService{
-		client: client,
+		client:     client,
+		defaultTTL: 24 * time.Hour,  // Default TTL for single products
+		listTTL:    5 * time.Minute, // Default TTL for product lists
 	}
+}
+
+func (s *CacheService) SetDefaultTTL(duration time.Duration) {
+	s.defaultTTL = duration
+}
+
+func (s *CacheService) SetListTTL(duration time.Duration) {
+	s.listTTL = duration
 }
 
 func (s *CacheService) Get(key string) (*models.Product, error) {
@@ -39,15 +52,15 @@ func (s *CacheService) Set(key string, product *models.Product) error {
 		return err
 	}
 
-	return s.client.Set(context.Background(), key, jsonData, 24*time.Hour).Err()
+	return s.client.Set(context.Background(), key, jsonData, s.defaultTTL).Err()
 }
 
 func (s *CacheService) Delete(key string) error {
 	return s.client.Del(context.Background(), key).Err()
 }
 
-func (c *CacheService) GetList(key string) (*models.PaginatedResponse, error) {
-	val, err := c.client.Get(context.Background(), key).Result()
+func (s *CacheService) GetList(key string) (*models.PaginatedResponse, error) {
+	val, err := s.client.Get(context.Background(), key).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -57,22 +70,39 @@ func (c *CacheService) GetList(key string) (*models.PaginatedResponse, error) {
 	return &response, err
 }
 
-func (c *CacheService) SetList(key string, value *models.PaginatedResponse) error {
+func (s *CacheService) SetList(key string, value *models.PaginatedResponse) error {
 	json, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
 
-	return c.client.Set(context.Background(), key, json, 5*time.Minute).Err()
+	return s.client.Set(context.Background(), key, json, s.listTTL).Err()
 }
 
-func (c *CacheService) DeletePattern(pattern string) error {
-	iter := c.client.Scan(context.Background(), 0, pattern, 0).Iterator()
+func (s *CacheService) DeletePattern(pattern string) error {
+	iter := s.client.Scan(context.Background(), 0, pattern, 0).Iterator()
 	for iter.Next(context.Background()) {
-		err := c.client.Del(context.Background(), iter.Val()).Err()
+		err := s.client.Del(context.Background(), iter.Val()).Err()
 		if err != nil {
 			return err
 		}
 	}
 	return iter.Err()
+}
+
+func (s *CacheService) GenerateProductKey(id string) string {
+	return fmt.Sprintf("product:%s", id)
+}
+
+func (s *CacheService) GenerateListKey(page int, pageSize int, sortBy string, sortDir string) string {
+	return fmt.Sprintf("products:list:p%d:s%d:sort_%s_%s", page, pageSize, sortBy, sortDir)
+}
+
+func (s *CacheService) InvalidateRelatedCaches(productID string) error {
+	err := s.Delete(s.GenerateProductKey(productID))
+	if err != nil {
+		return err
+	}
+
+	return s.DeletePattern("products:list:*")
 }

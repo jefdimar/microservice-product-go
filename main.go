@@ -31,6 +31,9 @@ func main() {
 		log.Fatal("Failed to load configuration:", err)
 	}
 
+	// Initialize Redis using config
+	redisClient := config.InitRedis(cfg)
+
 	// Initialize database
 	err = config.InitDatabases(cfg)
 	if err != nil {
@@ -40,8 +43,8 @@ func main() {
 	// Set up Gin
 	r := gin.Default()
 
-	// Initialize routes
-	routes.SetupRoutes(r)
+	// Initialize routes with Redis client
+	routes.SetupRoutes(r, redisClient)
 
 	// Run server
 	serverAddr := fmt.Sprintf(":%s", cfg.ServerPort)
