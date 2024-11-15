@@ -194,6 +194,10 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 
 	product, err := c.business.GetProductByID(id)
 	if err != nil {
+		if err.Error() == "product not found" {
+			c.respHandler.NotFoundResponse(ctx, "Product not found")
+			return
+		}
 		// Handle cache miss specifically
 		if err == redis.Nil {
 			// Cache miss - continue with database lookup
@@ -247,6 +251,11 @@ func (c *ProductController) Update(ctx *gin.Context) {
 
 	_, err := c.business.GetProductByID(id)
 	if err != nil {
+		if err.Error() == "product not found" {
+			c.respHandler.NotFoundResponse(ctx, "Product not found")
+			return
+		}
+
 		if err.Error() == "mongo: no documents in result" {
 			c.respHandler.NotFoundResponse(ctx, "Product not found")
 			return
@@ -292,6 +301,11 @@ func (c *ProductController) Delete(ctx *gin.Context) {
 
 	err := c.business.DeleteProduct(id)
 	if err != nil {
+		if err.Error() == "product not found" {
+			c.respHandler.NotFoundResponse(ctx, "Product not found")
+			return
+		}
+
 		if err.Error() == "mongo: no documents in result" {
 			c.respHandler.NotFoundResponse(ctx, "Product not found")
 			return

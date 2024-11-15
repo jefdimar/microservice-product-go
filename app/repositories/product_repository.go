@@ -196,6 +196,9 @@ func (r *ProductRepositoryImpl) FindAllInMongo(page, pageSize int, sortBy, sortD
 }
 
 func (r *ProductRepositoryImpl) FindByIDInMongo(idString string) (*models.Product, error) {
+	if !r.Exists(idString) {
+		return nil, fmt.Errorf("product not found")
+	}
 	product, err := r.cacheService.Get("product:" + idString)
 	if err == nil {
 		return product, nil
@@ -224,6 +227,10 @@ func (r *ProductRepositoryImpl) FindByIDInMongo(idString string) (*models.Produc
 }
 
 func (r *ProductRepositoryImpl) UpdateInMongo(idString string, product *models.Product) error {
+	if !r.Exists(idString) {
+		return fmt.Errorf("product not found")
+	}
+
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return err
@@ -245,6 +252,10 @@ func (r *ProductRepositoryImpl) UpdateInMongo(idString string, product *models.P
 }
 
 func (r *ProductRepositoryImpl) DeleteInMongo(idString string) error {
+	if !r.Exists(idString) {
+		return fmt.Errorf("product not found")
+	}
+
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return err
@@ -264,7 +275,6 @@ func (r *ProductRepositoryImpl) DeleteInMongo(idString string) error {
 
 	return nil
 }
-
 func (r *ProductRepositoryImpl) CountDocuments(filters map[string]interface{}) (int64, error) {
 	// Use the same filter logic as FindAllInMongo
 	filterQuery := bson.M{}
@@ -310,4 +320,15 @@ func (r *ProductRepositoryImpl) CountDocuments(filters map[string]interface{}) (
 	}
 
 	return r.mongoCollection.CountDocuments(context.Background(), filterQuery)
+}
+
+func (r *ProductRepositoryImpl) Exists(idString string) bool {
+	objectId, err := primitive.ObjectIDFromHex(idString)
+	if err != nil {
+		return false
+	}
+
+	filter := bson.M{"id": objectId}
+	count, err := r.mongoCollection.CountDocuments(context.Background(), filter)
+	return err == nil && count > 0
 }
