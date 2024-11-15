@@ -6,6 +6,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ReponseHandlerImpl struct{}
+
+func NewResponseHandler() ResponseHandler {
+	return &ReponseHandlerImpl{}
+}
+
 type Response struct {
 	Status  string      `json:"status"`
 	Message string      `json:"message"`
@@ -15,7 +21,7 @@ type Response struct {
 	Links   interface{} `json:"links,omitempty"`
 }
 
-func SuccessResponse(c *gin.Context, statusCode int, message string, data interface{}) {
+func (h *ReponseHandlerImpl) SuccessResponse(c *gin.Context, statusCode int, message string, data interface{}) {
 	c.JSON(statusCode, Response{
 		Status:  "success",
 		Message: message,
@@ -23,7 +29,7 @@ func SuccessResponse(c *gin.Context, statusCode int, message string, data interf
 	})
 }
 
-func PaginatedResponse(c *gin.Context, data interface{}, meta interface{}) {
+func (h *ReponseHandlerImpl) PaginatedResponse(c *gin.Context, data interface{}, meta interface{}) {
 	c.JSON(http.StatusOK, Response{
 		Status:  "success",
 		Message: "Data retrieved successfully",
@@ -32,7 +38,7 @@ func PaginatedResponse(c *gin.Context, data interface{}, meta interface{}) {
 	})
 }
 
-func ErrorResponse(c *gin.Context, statusCode int, message string, err interface{}) {
+func (h *ReponseHandlerImpl) ErrorResponse(c *gin.Context, statusCode int, message string, err interface{}) {
 	c.JSON(statusCode, Response{
 		Status:  "error",
 		Message: message,
@@ -40,7 +46,7 @@ func ErrorResponse(c *gin.Context, statusCode int, message string, err interface
 	})
 }
 
-func ValidationErrorResponse(c *gin.Context, err interface{}) {
+func (h *ReponseHandlerImpl) ValidationErrorResponse(c *gin.Context, err interface{}) {
 	c.JSON(http.StatusUnprocessableEntity, Response{
 		Status:  "error",
 		Message: "Validation failed",
@@ -48,7 +54,7 @@ func ValidationErrorResponse(c *gin.Context, err interface{}) {
 	})
 }
 
-func BadRequestResponse(c *gin.Context, err interface{}) {
+func (h *ReponseHandlerImpl) BadRequestResponse(c *gin.Context, err interface{}) {
 	c.JSON(http.StatusBadRequest, Response{
 		Status:  "error",
 		Message: "Invalid Request",
@@ -56,7 +62,7 @@ func BadRequestResponse(c *gin.Context, err interface{}) {
 	})
 }
 
-func InternalServerErrorResponse(c *gin.Context, err interface{}) {
+func (h *ReponseHandlerImpl) InternalServerErrorResponse(c *gin.Context, err interface{}) {
 	c.JSON(http.StatusInternalServerError, Response{
 		Status:  "error",
 		Message: "Internal Server Error",
@@ -64,14 +70,14 @@ func InternalServerErrorResponse(c *gin.Context, err interface{}) {
 	})
 }
 
-func NotFoundResponse(c *gin.Context, message string) {
+func (h *ReponseHandlerImpl) NotFoundResponse(c *gin.Context, message string) {
 	c.JSON(http.StatusNotFound, Response{
 		Status:  "error",
 		Message: message,
 	})
 }
 
-func ConflictResponse(c *gin.Context, err interface{}) {
+func (h *ReponseHandlerImpl) ConflictResponse(c *gin.Context, err interface{}) {
 	c.JSON(http.StatusConflict, Response{
 		Status:  "error",
 		Message: "Resource conflict",
@@ -79,20 +85,20 @@ func ConflictResponse(c *gin.Context, err interface{}) {
 	})
 }
 
-func UnauthorizedResponse(c *gin.Context) {
+func (h *ReponseHandlerImpl) UnauthorizedResponse(c *gin.Context) {
 	c.JSON(http.StatusUnauthorized, Response{
 		Status:  "error",
 		Message: "Unauthorized",
 	})
 }
 
-func ForbiddenResponse(c *gin.Context) {
+func (h *ReponseHandlerImpl) ForbiddenResponse(c *gin.Context) {
 	c.JSON(http.StatusForbidden, Response{
 		Status:  "error",
 		Message: "Forbidden",
 	})
 }
 
-func NoContentResponse(c *gin.Context) {
+func (h *ReponseHandlerImpl) NoContentResponse(c *gin.Context) {
 	c.JSON(http.StatusNoContent, nil)
 }

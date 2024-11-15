@@ -17,11 +17,15 @@ import (
 )
 
 type ProductController struct {
-	business usecase.ProductUsecase
+	business    usecase.ProductUsecase
+	respHandler handlers.ResponseHandler
 }
 
-func NewProductController(usecase usecase.ProductUsecase) *ProductController {
-	return &ProductController{usecase}
+func NewProductController(usecase usecase.ProductUsecase, handler handlers.ResponseHandler) *ProductController {
+	return &ProductController{
+		business:    usecase,
+		respHandler: handler,
+	}
 }
 
 // @Summary Create a new product
@@ -38,22 +42,22 @@ func NewProductController(usecase usecase.ProductUsecase) *ProductController {
 func (c *ProductController) Create(ctx *gin.Context) {
 	var product models.Product
 	if err := ctx.ShouldBindJSON(&product); err != nil {
-		handlers.BadRequestResponse(ctx, err.Error())
+		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
 
 	if err := c.business.CreateProduct(&product); err != nil {
 		if strings.Contains(err.Error(), "validation") {
-			handlers.ValidationErrorResponse(ctx, err.Error())
+			c.respHandler.ValidationErrorResponse(ctx, err.Error())
 			return
 		}
-		handlers.InternalServerErrorResponse(ctx, err.Error())
+		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
 	c.business.InvalidateListCaches()
 
-	handlers.SuccessResponse(ctx, http.StatusCreated, "Product created successfully", product)
+	c.respHandler.SuccessResponse(ctx, http.StatusCreated, "Product created successfully", product)
 }
 
 // @Summary Get all products
@@ -143,7 +147,7 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 	}
 
 	if err := validation.ValidateQueryParams(params); err != nil {
-		handlers.ValidationErrorResponse(ctx, err.Error())
+		c.respHandler.ValidationErrorResponse(ctx, err.Error())
 		return
 	}
 
@@ -153,16 +157,16 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 			// Cache miss - fetch from database
 			paginatedResponse, err = c.business.GetAllProducts(params.Page, params.PageSize, params.SortBy, params.SortDir, filters)
 			if err != nil {
-				handlers.InternalServerErrorResponse(ctx, err.Error())
+				c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 				return
 			}
 		} else {
-			handlers.InternalServerErrorResponse(ctx, err.Error())
+			c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 			return
 		}
 	}
 
-	handlers.SuccessResponse(ctx, http.StatusOK, "Products retrieved successfully", paginatedResponse)
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Products retrieved successfully", paginatedResponse)
 }
 
 // @Summary Get product by ID
@@ -179,7 +183,7 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 func (c *ProductController) GetByID(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if err := validation.ValidateObjectID(id); err != nil {
-		handlers.BadRequestResponse(ctx, err.Error())
+		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
 
@@ -191,23 +195,23 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 			product, err = c.business.GetProductByID(id)
 			if err != nil {
 				if err.Error() == "mongo: no documents in result" {
-					handlers.NotFoundResponse(ctx, "Product not found")
+					c.respHandler.NotFoundResponse(ctx, "Product not found")
 					return
 				}
-				handlers.InternalServerErrorResponse(ctx, err.Error())
+				c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 				return
 			}
 		} else if err.Error() == "mongo: no documents in result" {
-			handlers.NotFoundResponse(ctx, "Product not found")
+			c.respHandler.NotFoundResponse(ctx, "Product not found")
 			return
 		} else {
-			handlers.InternalServerErrorResponse(ctx, err.Error())
+			c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 			return
 		}
 
 	}
 
-	handlers.SuccessResponse(ctx, http.StatusOK, "Product retrieved successfully", product)
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Product retrieved successfully", product)
 }
 
 // @Summary Update a product
@@ -226,32 +230,32 @@ func (c *ProductController) GetByID(ctx *gin.Context) {
 func (c *ProductController) Update(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if err := validation.ValidateObjectID(id); err != nil {
-		handlers.BadRequestResponse(ctx, err.Error())
+		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
 	var product models.Product
 
 	if err := ctx.ShouldBindJSON(&product); err != nil {
-		handlers.BadRequestResponse(ctx, err.Error())
+		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
 
 	_, err := c.business.GetProductByID(id)
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
-			handlers.NotFoundResponse(ctx, "Product not found")
+			c.respHandler.NotFoundResponse(ctx, "Product not found")
 			return
 		}
-		handlers.InternalServerErrorResponse(ctx, err.Error())
+		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
 	if err := c.business.UpdateProduct(id, &product); err != nil {
 		if strings.Contains(err.Error(), "validation") {
-			handlers.ValidationErrorResponse(ctx, err.Error())
+			c.respHandler.ValidationErrorResponse(ctx, err.Error())
 			return
 		}
-		handlers.InternalServerErrorResponse(ctx, err.Error())
+		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
@@ -260,7 +264,7 @@ func (c *ProductController) Update(ctx *gin.Context) {
 		log.Printf("Failed to invalidate cache: %v", err)
 	}
 
-	handlers.SuccessResponse(ctx, http.StatusOK, "Product updated successfully", product)
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Product updated successfully", product)
 }
 
 // @Summary Delete a product
@@ -277,17 +281,17 @@ func (c *ProductController) Update(ctx *gin.Context) {
 func (c *ProductController) Delete(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if err := validation.ValidateObjectID(id); err != nil {
-		handlers.BadRequestResponse(ctx, err.Error())
+		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
 
 	err := c.business.DeleteProduct(id)
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
-			handlers.NotFoundResponse(ctx, "Product not found")
+			c.respHandler.NotFoundResponse(ctx, "Product not found")
 			return
 		}
-		handlers.InternalServerErrorResponse(ctx, err.Error())
+		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
@@ -296,5 +300,5 @@ func (c *ProductController) Delete(ctx *gin.Context) {
 		log.Printf("Failed to invalidate cache: %v", err)
 	}
 
-	handlers.SuccessResponse(ctx, http.StatusOK, "Product deleted successfully", nil)
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Product deleted successfully", nil)
 }

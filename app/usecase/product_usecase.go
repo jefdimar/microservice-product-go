@@ -10,15 +10,16 @@ import (
 
 type ProductUsecaseImpl struct {
 	repository   repositories.ProductRepository
-	cacheService *services.CacheService
+	cacheService services.CacheService
 }
 
-func NewProductUsecase(repo repositories.ProductRepository, cache *services.CacheService) ProductUsecase {
+func NewProductUsecase(repo repositories.ProductRepository, cache services.CacheService) ProductUsecase {
 	return &ProductUsecaseImpl{
 		repository:   repo,
 		cacheService: cache,
 	}
 }
+
 func (b *ProductUsecaseImpl) GetAllProducts(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) (*models.PaginatedResponse, error) {
 	products, err := b.repository.FindAllInMongo(page, pageSize, sortBy, sortDir, filters)
 	if err != nil {
@@ -59,7 +60,6 @@ func (b *ProductUsecaseImpl) CreateProduct(product *models.Product) error {
 func (b *ProductUsecaseImpl) GetProductByID(id string) (*models.Product, error) {
 	return b.repository.FindByIDInMongo(id)
 }
-
 func (b *ProductUsecaseImpl) UpdateProduct(id string, product *models.Product) error {
 	validator := validation.NewProductValidator(product)
 	if err := validator.Validate(); err != nil {
@@ -73,7 +73,6 @@ func (b *ProductUsecaseImpl) UpdateProduct(id string, product *models.Product) e
 	}
 	return err
 }
-
 func (b *ProductUsecaseImpl) DeleteProduct(id string) error {
 	err := b.repository.DeleteInMongo(id)
 	if err == nil {
@@ -82,11 +81,9 @@ func (b *ProductUsecaseImpl) DeleteProduct(id string) error {
 	}
 	return err
 }
-
 func (u *ProductUsecaseImpl) InvalidateRelatedCaches(productID string) error {
 	return u.cacheService.InvalidateRelatedCaches(productID)
 }
-
 func (u *ProductUsecaseImpl) InvalidateListCaches() error {
 	return u.cacheService.DeletePattern("products:list:*")
 }

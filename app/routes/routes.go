@@ -2,6 +2,7 @@ package routes
 
 import (
 	"go-microservice-product-porto/app/controllers"
+	"go-microservice-product-porto/app/handlers"
 	"go-microservice-product-porto/app/repositories"
 	"go-microservice-product-porto/app/services"
 	"go-microservice-product-porto/app/usecase"
@@ -28,17 +29,13 @@ func SetupRoutes(r *gin.Engine, redisClient *redis.Client) {
 	})
 	r.GET("/doc/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Initialize services
+	// Initialize all components
+	responseHandler := handlers.NewResponseHandler()
 	cacheService := services.NewCacheService(redisClient)
-
-	// Initialize repository
-	productRepo := repositories.NewProductRepository()
-
-	// Initialize business with both repository and cache service
+	productRepo := repositories.NewProductRepository(cacheService)
 	productUsecase := usecase.NewProductUsecase(productRepo, cacheService)
+	productController := controllers.NewProductController(productUsecase, responseHandler)
 
-	// Initialize controller
-	productController := controllers.NewProductController(productUsecase)
 	api := r.Group("/api")
 	{
 		products := api.Group("/products")

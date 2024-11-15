@@ -19,11 +19,10 @@ import (
 type ProductRepositoryImpl struct {
 	postgresDB      *gorm.DB
 	mongoCollection *mongo.Collection
-	cacheService    *services.CacheService
+	cacheService    services.CacheService
 }
 
-func NewProductRepository() *ProductRepositoryImpl {
-	cacheService := services.NewCacheService(config.DBConn.Redis)
+func NewProductRepository(cacheService services.CacheService) ProductRepository {
 	return &ProductRepositoryImpl{
 		mongoCollection: config.DBConn.MongoDB.Collection("products"),
 		postgresDB:      config.DBConn.PostgreDB,
@@ -31,7 +30,7 @@ func NewProductRepository() *ProductRepositoryImpl {
 	}
 }
 
-func (r *ProductRepositoryImpl) GetCacheService() *services.CacheService {
+func (r *ProductRepositoryImpl) GetCacheService() services.CacheService {
 	return r.cacheService
 }
 

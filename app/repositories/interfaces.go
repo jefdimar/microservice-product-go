@@ -15,5 +15,5 @@ type ProductRepository interface {
 	FindAllInMongo(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) ([]models.Product, error)
 	FindByIDInMongo(idString string) (*models.Product, error)
 	CountDocuments(filters map[string]interface{}) (int64, error)
-	GetCacheService() *services.CacheService
+	GetCacheService() services.CacheService
 }
