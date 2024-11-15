@@ -78,7 +78,12 @@ func (c *ProductController) GetAll(ctx *gin.Context) {
 		Page:     helpers.ParseInt(ctx.Query("page"), 1),
 		PageSize: helpers.ParseInt(ctx.Query("pageSize"), 10),
 		SortBy:   ctx.Query("sortBy"),
-		SortDir:  ctx.Query("sortDir"),
+		SortDir:  strings.ToLower(ctx.Query("sortDir")), // Normalize the direction
+	}
+
+	// Validate sort direction
+	if params.SortDir != "" && params.SortDir != "asc" && params.SortDir != "desc" {
+		params.SortDir = "desc" // Set default if invalid
 	}
 
 	filters := make(map[string]interface{})

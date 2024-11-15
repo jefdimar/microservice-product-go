@@ -58,6 +58,8 @@ func (r *ProductRepositoryImpl) CreateInMongo(product *models.Product) error {
 	product.CreatedAt = time.Now()
 	product.UpdatedAt = time.Now()
 	product.FormattedPrice = helpers.FormatPrice(product.Price)
+	product.FormattedCreatedAt = helpers.FormatDateTime(product.CreatedAt)
+	product.FormattedUpdatedAt = helpers.FormatDateTime(product.UpdatedAt)
 
 	if !product.IsActive {
 		product.IsActive = true
@@ -139,6 +141,21 @@ func (r *ProductRepositoryImpl) FindAllInMongo(page, pageSize int, sortBy, sortD
 		totalPages++
 	}
 
+	// Map the sortBy field to the correct MongoDB field name
+	mongoSortField := "created_at"
+	if sortBy != "" {
+		switch sortBy {
+		case "created_at":
+			mongoSortField = "created_at"
+		case "updated_at":
+			mongoSortField = "updated_at"
+		case "price":
+			mongoSortField = "price"
+		case "name":
+			mongoSortField = "name"
+		}
+	}
+
 	sortValue := 1
 	if sortDir == "desc" {
 		sortValue = -1
@@ -147,7 +164,8 @@ func (r *ProductRepositoryImpl) FindAllInMongo(page, pageSize int, sortBy, sortD
 	opts := options.Find().
 		SetSkip(int64(skip)).
 		SetLimit(int64(pageSize)).
-		SetSort(bson.D{{Key: sortBy, Value: sortValue}})
+		SetSort(bson.D{{Key: mongoSortField, Value: sortValue}})
+
 	cursor, err := r.mongoCollection.Find(context.Background(), filterQuery, opts)
 	if err != nil {
 		return nil, err
@@ -176,6 +194,7 @@ func (r *ProductRepositoryImpl) FindAllInMongo(page, pageSize int, sortBy, sortD
 
 	return products, err
 }
+
 func (r *ProductRepositoryImpl) FindByIDInMongo(idString string) (*models.Product, error) {
 	product, err := r.cacheService.Get("product:" + idString)
 	if err == nil {
