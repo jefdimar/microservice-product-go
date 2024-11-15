@@ -46,6 +46,14 @@ type Product struct {
 	FormattedUpdatedAt string      `json:"updated_at"`
 }
 
+type ProductUpdate struct {
+	Name        *string  `json:"name,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	Price       *float64 `json:"price,omitempty"`
+	Stock       *int     `json:"stock,omitempty"`
+	IsActive    *bool    `json:"is_active,omitempty"`
+}
+
 func (p PostgresProduct) ToCommon() Product {
 	return Product{
 

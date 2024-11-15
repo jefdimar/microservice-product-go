@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"go-microservice-product-porto/app/models"
 	"go-microservice-product-porto/app/repositories"
 	"go-microservice-product-porto/app/services"
@@ -60,19 +61,33 @@ func (b *ProductUsecaseImpl) CreateProduct(product *models.Product) error {
 func (b *ProductUsecaseImpl) GetProductByID(id string) (*models.Product, error) {
 	return b.repository.FindByIDInMongo(id)
 }
-func (b *ProductUsecaseImpl) UpdateProduct(id string, product *models.Product) error {
-	validator := validation.NewProductValidator(product)
-	if err := validator.Validate(); err != nil {
-		return err
+
+func (b *ProductUsecaseImpl) UpdateProduct(id string, updates *models.ProductUpdate) error {
+	updateMap := make(map[string]interface{})
+
+	if updates.Name != nil {
+		updateMap["name"] = *updates.Name
+	}
+	if updates.Price != nil {
+		updateMap["price"] = *updates.Price
+	}
+	if updates.Description != nil {
+		updateMap["description"] = *updates.Description
+	}
+	if updates.Stock != nil {
+		updateMap["stock"] = *updates.Stock
+	}
+	if updates.IsActive != nil {
+		updateMap["is_active"] = *updates.IsActive
 	}
 
-	err := b.repository.UpdateInMongo(id, product)
-	if err == nil {
-		b.repository.GetCacheService().Delete("product:" + id)
-		b.repository.GetCacheService().DeletePattern("products:list:*")
+	if len(updateMap) == 0 {
+		return fmt.Errorf("no fields to update")
 	}
-	return err
+
+	return b.repository.UpdateInMongo(id, updateMap)
 }
+
 func (b *ProductUsecaseImpl) DeleteProduct(id string) error {
 	err := b.repository.DeleteInMongo(id)
 	if err == nil {
@@ -81,9 +96,11 @@ func (b *ProductUsecaseImpl) DeleteProduct(id string) error {
 	}
 	return err
 }
+
 func (u *ProductUsecaseImpl) InvalidateRelatedCaches(productID string) error {
 	return u.cacheService.InvalidateRelatedCaches(productID)
 }
+
 func (u *ProductUsecaseImpl) InvalidateListCaches() error {
 	return u.cacheService.DeletePattern("products:list:*")
 }

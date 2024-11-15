@@ -10,7 +10,7 @@ type ProductRepository interface {
 	FindAllInPostgres() ([]models.Product, error)
 	FindByIDInPostgres(id uint) (*models.Product, error)
 	CreateInMongo(product *models.Product) error
-	UpdateInMongo(idString string, product *models.Product) error
+	UpdateInMongo(idString string, updates map[string]interface{}) error
 	DeleteInMongo(idString string) error
 	FindAllInMongo(page, pageSize int, sortBy, sortDir string, filters map[string]interface{}) ([]models.Product, error)
 	FindByIDInMongo(idString string) (*models.Product, error)

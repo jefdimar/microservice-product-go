@@ -43,7 +43,7 @@ func SetupRoutes(r *gin.Engine, redisClient *redis.Client) {
 			products.POST("/", productController.Create)
 			products.GET("/", productController.GetAll)
 			products.GET("/:id", productController.GetByID)
-			products.PUT("/:id", productController.Update)
+			products.PATCH("/:id", productController.Update)
 			products.DELETE("/:id", productController.Delete)
 		}
 	}

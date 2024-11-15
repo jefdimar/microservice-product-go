@@ -242,43 +242,27 @@ func (c *ProductController) Update(ctx *gin.Context) {
 		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
-	var product models.Product
 
-	if err := ctx.ShouldBindJSON(&product); err != nil {
+	var updates models.ProductUpdate
+	if err := ctx.ShouldBindJSON(&updates); err != nil {
 		c.respHandler.BadRequestResponse(ctx, err.Error())
 		return
 	}
 
-	_, err := c.business.GetProductByID(id)
-	if err != nil {
-		if err.Error() == "product not found" {
-			c.respHandler.NotFoundResponse(ctx, "Product not found")
-			return
-		}
+	if err := c.business.UpdateProduct(id, &updates); err != nil {
 
-		if err.Error() == "mongo: no documents in result" {
-			c.respHandler.NotFoundResponse(ctx, "Product not found")
+		if err.Error() == "no fields to update" {
+			c.respHandler.BadRequestResponse(ctx, err.Error())
 			return
 		}
 		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
 		return
 	}
 
-	if err := c.business.UpdateProduct(id, &product); err != nil {
-		if strings.Contains(err.Error(), "validation") {
-			c.respHandler.ValidationErrorResponse(ctx, err.Error())
-			return
-		}
-		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
-		return
-	}
+	// Fetch the updated product
+	updatedProduct, _ := c.business.GetProductByID(id)
 
-	// After successful update, invalidate related caches
-	if err := c.business.InvalidateRelatedCaches(id); err != nil {
-		log.Printf("Failed to invalidate cache: %v", err)
-	}
-
-	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Product updated successfully", product)
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Product updated successfully", updatedProduct)
 }
 
 // @Summary Delete a product

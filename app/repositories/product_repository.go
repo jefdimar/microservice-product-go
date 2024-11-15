@@ -226,29 +226,36 @@ func (r *ProductRepositoryImpl) FindByIDInMongo(idString string) (*models.Produc
 
 }
 
-func (r *ProductRepositoryImpl) UpdateInMongo(idString string, product *models.Product) error {
-	if !r.Exists(idString) {
-		return fmt.Errorf("product not found")
-	}
+func (r *ProductRepositoryImpl) UpdateInMongo(idString string, updates map[string]interface{}) error {
 
 	objectId, err := primitive.ObjectIDFromHex(idString)
 	if err != nil {
 		return err
 	}
 
+	updates["updated_at"] = time.Now()
+
+	if price, ok := updates["price"]; ok {
+		updates["formatted_price"] = helpers.FormatPrice(price.(float64))
+	}
+
 	update := bson.M{
-		"$set": bson.M{
-			"name":            product.Name,
-			"price":           product.Price,
-			"description":     product.Description,
-			"formatted_price": helpers.FormatPrice(product.Price),
-			"updated_at":      time.Now(),
-		},
+		"$set": updates,
 	}
 
 	filter := bson.M{"id": objectId}
-	_, err = r.mongoCollection.UpdateOne(context.Background(), filter, update)
-	return err
+	result, err := r.mongoCollection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	if result.ModifiedCount > 0 {
+		// Clear both specific product cache and list cache
+		r.cacheService.Delete("product:" + idString)
+		r.cacheService.DeletePattern("product:list:*")
+	}
+
+	return nil
 }
 
 func (r *ProductRepositoryImpl) DeleteInMongo(idString string) error {
