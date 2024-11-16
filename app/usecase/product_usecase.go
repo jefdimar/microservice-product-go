@@ -104,3 +104,39 @@ func (u *ProductUsecaseImpl) InvalidateRelatedCaches(productID string) error {
 func (u *ProductUsecaseImpl) InvalidateListCaches() error {
 	return u.cacheService.DeletePattern("products:list:*")
 }
+
+func (b *ProductUsecaseImpl) UpdateProductStock(id string, newStock int, reason string) error {
+	product, err := b.GetProductByID(id)
+	if err != nil {
+		return err
+	}
+
+	if err := validation.ValidateStockUpdate(product.Stock, newStock); err != nil {
+		return err
+	}
+
+	if newStock <= 10 {
+		fmt.Printf("Low stock alert for product %s: %d units remaining\n", id, newStock)
+	}
+
+	err = b.repository.UpdateStock(id, newStock, reason)
+	if err != nil {
+		return err
+	}
+
+	return b.InvalidateRelatedCaches(id)
+}
+
+func (b *ProductUsecaseImpl) GetStockMovement(id string) ([]models.StockMovement, error) {
+	_, err := b.GetProductByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	movements, err := b.repository.GetStockMovement(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return movements, nil
+}

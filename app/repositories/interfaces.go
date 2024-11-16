@@ -16,4 +16,7 @@ type ProductRepository interface {
 	FindByIDInMongo(idString string) (*models.Product, error)
 	CountDocuments(filters map[string]interface{}) (int64, error)
 	GetCacheService() services.CacheService
+	UpdateStock(id string, newStock int, reason string) error
+	CreateStockMovement(movement *models.StockMovement) error
+	GetStockMovement(productID string) ([]models.StockMovement, error)
 }

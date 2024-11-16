@@ -94,3 +94,15 @@ func (v *ProductValidator) validateDescription(ve *ValidationErrors) {
 func (ve *ValidationErrors) Error() string {
 	return fmt.Sprintf("validation failed: %v", ve.Errors)
 }
+
+func ValidateStockUpdate(currentStock, newStock int) error {
+	if newStock < 0 {
+		return fmt.Errorf("stock cannot be negative")
+	}
+
+	if newStock > 10000 {
+		return fmt.Errorf("stock cannot exceed 10.0000 units")
+	}
+
+	return nil
+}

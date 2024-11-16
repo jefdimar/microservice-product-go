@@ -45,6 +45,8 @@ func SetupRoutes(r *gin.Engine, redisClient *redis.Client) {
 			products.GET("/:id", productController.GetByID)
 			products.PATCH("/:id", productController.Update)
 			products.DELETE("/:id", productController.Delete)
+			products.PUT("/:id/stock", productController.UpdateStock)
+			products.GET("/:id/stock-movements", productController.GetStockMovements)
 		}
 	}
 }

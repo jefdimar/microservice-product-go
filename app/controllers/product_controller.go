@@ -305,3 +305,62 @@ func (c *ProductController) Delete(ctx *gin.Context) {
 
 	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Product deleted successfully", nil)
 }
+
+// @Summary Update product stock
+// @Description Update product stock with movement tracking
+// @Tags stock
+// @Accept json
+// @Produce json
+// @Param id path string true "Product ID"
+// @Param request body StockUpdateRequest true "Stock update details"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /products/{id}/stock [put]
+func (c *ProductController) UpdateStock(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	var request struct {
+		Stock  int    `json:"stock" binding:"required"`
+		Reason string `json:"reason" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&request); err != nil {
+		c.respHandler.BadRequestResponse(ctx, err.Error())
+		return
+	}
+
+	err := c.business.UpdateProductStock(id, request.Stock, request.Reason)
+	if err != nil {
+		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
+		return
+	}
+
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Stock updated successfully", nil)
+}
+
+// @Summary Get stock movement history
+// @Description Get stock movement history for a product
+// @Tags stock
+// @Accept json
+// @Produce json
+// @Param id path string true "Product ID"
+// @Success 200 {array} models.StockMovement
+// @Failure 400 {object} map[string]interface{}
+// @Failure 404 {object} map[string]interface{}
+// @Router /products/{id}/stock-movements [get]
+func (c *ProductController) GetStockMovements(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if err := validation.ValidateObjectID(id); err != nil {
+		c.respHandler.BadRequestResponse(ctx, err.Error())
+		return
+	}
+
+	movements, err := c.business.GetStockMovement(id)
+	if err != nil {
+		c.respHandler.InternalServerErrorResponse(ctx, err.Error())
+		return
+	}
+
+	c.respHandler.SuccessResponse(ctx, http.StatusOK, "Stock movements retrieved successfully", movements)
+}

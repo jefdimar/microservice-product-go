@@ -10,4 +10,6 @@ type ProductUsecase interface {
 	DeleteProduct(id string) error
 	InvalidateRelatedCaches(productID string) error
 	InvalidateListCaches() error
+	UpdateProductStock(id string, newStock int, reason string) error
+	GetStockMovement(id string) ([]models.StockMovement, error)
 }

@@ -282,6 +282,72 @@ func (r *ProductRepositoryImpl) DeleteInMongo(idString string) error {
 
 	return nil
 }
+
+func (r *ProductRepositoryImpl) UpdateStock(id string, newStock int, reason string) error {
+	objectId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	var product models.Product
+	filter := bson.M{"id": objectId}
+	err = r.mongoCollection.FindOne(context.Background(), filter).Decode(&product)
+	if err != nil {
+		return err
+	}
+
+	movementType := "decrease"
+	if newStock > product.Stock {
+		movementType = "increase"
+	}
+
+	movement := models.StockMovement{
+		ID:            primitive.NewObjectID(),
+		ProductID:     product.ID.(primitive.ObjectID),
+		Type:          movementType,
+		Quantity:      newStock - product.Stock,
+		PreviousStock: product.Stock,
+		NewStock:      newStock,
+		Reason:        reason,
+		CreatedAt:     time.Now(),
+	}
+
+	update := bson.M{
+		"$set": bson.M{
+			"stock":      newStock,
+			"updated_at": time.Now(),
+		},
+	}
+
+	_, err = r.mongoCollection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return err
+	}
+
+	return r.CreateStockMovement(&movement)
+}
+func (r *ProductRepositoryImpl) CreateStockMovement(movement *models.StockMovement) error {
+	_, err := r.mongoCollection.Database().Collection("stock_movements").InsertOne(context.Background(), movement)
+	return err
+}
+
+func (r *ProductRepositoryImpl) GetStockMovement(productID string) ([]models.StockMovement, error) {
+	objectId, err := primitive.ObjectIDFromHex(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	var movements []models.StockMovement
+	filter := bson.M{"product_id": objectId}
+	cursor, err := r.mongoCollection.Database().Collection("stock_movements").Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(context.Background(), &movements)
+	return movements, err
+}
+
 func (r *ProductRepositoryImpl) CountDocuments(filters map[string]interface{}) (int64, error) {
 	// Use the same filter logic as FindAllInMongo
 	filterQuery := bson.M{}
