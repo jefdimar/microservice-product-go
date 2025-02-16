@@ -1,9 +1,36 @@
 package errors
 
+import (
+	"fmt"
+	"strings"
+)
+
 type AppError struct {
 	Err     error
 	Message string
 	Code    string
+}
+
+// Implement the error interface
+func (e *AppError) Error() string {
+	var b strings.Builder
+
+	if e.Code != "" {
+		fmt.Fprintf(&b, "[%s] ", e.Code)
+	}
+
+	if e.Message != "" {
+		fmt.Fprintf(&b, "%s", e.Message)
+	}
+
+	if e.Err != nil {
+		if e.Message != "" {
+			b.WriteString(": ")
+		}
+		fmt.Fprintf(&b, "%v", e.Err)
+	}
+
+	return b.String()
 }
 
 func StandardError(code string, err error) *AppError {

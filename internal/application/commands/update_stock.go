@@ -2,9 +2,9 @@ package commands
 
 import (
 	"context"
-	"time"
-
 	"go-microservice-product-porto/internal/domain/product"
+	"go-microservice-product-porto/pkg/errors"
+	"time"
 )
 
 type UpdateStockCommand struct {
@@ -15,11 +15,11 @@ type UpdateStockCommand struct {
 func (h *ProductCommandHandler) HandleUpdateStock(ctx context.Context, cmd UpdateStockCommand) error {
 	prod, err := h.repo.FindByID(ctx, cmd.ProductID)
 	if err != nil {
-		return err
+		return errors.StandardError(errors.ENOTFOUND, err)
 	}
 
 	if cmd.Stock < 0 {
-		return product.ErrInvalidStock
+		return errors.StandardError(errors.EVALIDATION, product.ErrInvalidStock)
 	}
 
 	oldStock := prod.Stock
@@ -27,7 +27,12 @@ func (h *ProductCommandHandler) HandleUpdateStock(ctx context.Context, cmd Updat
 	prod.UpdatedAt = time.Now()
 
 	if err := h.repo.Update(ctx, prod); err != nil {
-		return err
+		return errors.StandardError(errors.EREPOSITORY, err)
+	}
+
+	// Handle cache update
+	if err := h.cache.Set(prod.ID.Hex(), prod); err != nil {
+		return errors.StandardError(errors.ECACHE, err)
 	}
 
 	h.eventHandler.HandleStockUpdated(&product.ProductStockUpdatedEvent{
