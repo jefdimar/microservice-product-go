@@ -69,13 +69,25 @@ func (h *ProductHandler) GetProduct(c *gin.Context) {
 }
 
 func (h *ProductHandler) ListProducts(c *gin.Context) {
-	products, err := h.queryHandler.HandleListProducts(c.Request.Context(), queries.ListProductsQuery{})
+	query := queries.ListProductsQuery{
+		Page:     parseInt(c.DefaultQuery("page", "1")),
+		PageSize: parseInt(c.DefaultQuery("page_size", "10")),
+		SortBy:   c.DefaultQuery("sort_by", ""),
+		SortDir:  c.DefaultQuery("sort_dir", "asc"),
+	}
+
+	result, err := h.queryHandler.HandleListProducts(c.Request.Context(), query)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, products)
+	c.JSON(http.StatusOK, result)
+}
+
+func parseInt(str string) int {
+	val, _ := strconv.Atoi(str)
+	return val
 }
 
 func (h *ProductHandler) UpdateStock(c *gin.Context) {

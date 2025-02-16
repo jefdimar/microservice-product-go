@@ -7,27 +7,44 @@ import (
 )
 
 type ListProductsQuery struct {
-	// Add any filtering/pagination parameters here
+	Page     int    `json:"page"`
+	PageSize int    `json:"page_size"`
+	SortBy   string `json:"sort_by"`
+	SortDir  string `json:"sort_dir"` // "asc" or "desc"
 }
 
-func (h *ProductQueryHandler) HandleListProducts(ctx context.Context, query ListProductsQuery) ([]*product.Product, error) {
-	cacheKey := "products:all"
+type ListProductsResponse struct {
+	Products []*product.Product `json:"products"`
+	Total    int64              `json:"total"`
+	Page     int                `json:"page"`
+	PageSize int                `json:"page_size"`
+}
 
-	// Try to get from cache first
-	if cachedProducts, err := h.cache.Get(cacheKey); err == nil {
-		if products, ok := cachedProducts.([]*product.Product); ok {
-			return products, nil
-		}
+func (h *ProductQueryHandler) HandleListProducts(ctx context.Context, query ListProductsQuery) (*ListProductsResponse, error) {
+	// Set default values if not provided
+	if query.Page <= 0 {
+		query.Page = 1
+	}
+	if query.PageSize <= 0 {
+		query.PageSize = 10
 	}
 
-	// Get from repository if not in cache
-	products, err := h.repo.FindAll(ctx)
+	// Validate sort direction
+	if query.SortDir != "" && query.SortDir != "asc" && query.SortDir != "desc" {
+		query.SortDir = "asc"
+	}
+
+	products, total, err := h.repo.FindAll(ctx, query.Page, query.PageSize, query.SortBy, query.SortDir)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update cache
-	h.cache.Set(cacheKey, products)
+	response := &ListProductsResponse{
+		Products: products,
+		Total:    total,
+		Page:     query.Page,
+		PageSize: query.PageSize,
+	}
 
-	return products, nil
+	return response, nil
 }
