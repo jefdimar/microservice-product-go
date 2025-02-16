@@ -30,4 +30,4 @@ docs/
 
 tmp/main
 
-.env
+*.env
