@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"go-microservice-product-porto/pkg/errors"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -43,12 +45,12 @@ func InitMongoDB(cfg MongoConfig) (*mongo.Client, error) {
 
 	client, err := mongo.Connect(ctx, clientOptions)
 	if err != nil {
-		return nil, err
+		return nil, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to connect to MongoDB: %v", err))
 	}
 
 	err = client.Ping(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.StandardError(errors.ETIMEOUT, fmt.Errorf("failed to ping MongoDB: %v", err))
 	}
 
 	return client, nil

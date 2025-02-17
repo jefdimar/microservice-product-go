@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go-microservice-product-porto/internal/domain/product"
+	"go-microservice-product-porto/pkg/errors"
 )
 
 type ProductRepository struct {
@@ -28,9 +29,9 @@ func (r *ProductRepository) Create(ctx context.Context, prod *product.Product) e
 	_, err := r.collection.InsertOne(ctx, prod)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return product.ErrProductAlreadyExists
+			return errors.StandardError(errors.ECONFLICT, product.ErrProductAlreadyExists)
 		}
-		return err
+		return errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to create product: %v", err))
 	}
 	return nil
 }
@@ -38,29 +39,30 @@ func (r *ProductRepository) Create(ctx context.Context, prod *product.Product) e
 func (r *ProductRepository) FindByID(ctx context.Context, id string) (*product.Product, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		return nil, errors.StandardError(errors.EINVALID, fmt.Errorf("invalid product ID: %v", err))
 	}
 
 	var prod product.Product
 	err = r.collection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&prod)
 	if err == mongo.ErrNoDocuments {
-		return nil, product.ErrProductNotFound
+		return nil, errors.StandardError(errors.ENOTFOUND, product.ErrProductNotFound)
 	}
-	return &prod, err
+	if err != nil {
+		return nil, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to find product: %v", err))
+	}
+	return &prod, nil
 }
 
 func (r *ProductRepository) FindAll(ctx context.Context, page, pageSize int, sortBy, sortDir string) ([]*product.Product, int64, error) {
 	skip := (page - 1) * pageSize
 
-	// Map API sort fields to actual MongoDB document field names
 	sortFieldMap := map[string]string{
-		"name":       "name",       // Verify this matches your MongoDB field
-		"price":      "price",      // For nested fields
-		"stock":      "stock",      // Verify this matches your MongoDB field
-		"created_at": "created_at", // Verify this matches your MongoDB field
+		"name":       "name",
+		"price":      "price",
+		"stock":      "stock",
+		"created_at": "created_at",
 	}
 
-	// Build sort options
 	sortOpts := bson.D{}
 	if sortBy != "" {
 		if mongoField, exists := sortFieldMap[sortBy]; exists {
@@ -68,8 +70,6 @@ func (r *ProductRepository) FindAll(ctx context.Context, page, pageSize int, sor
 			if strings.ToLower(sortDir) == "desc" {
 				sortValue = -1
 			}
-
-			// Special handling for price field
 			if sortBy == "price" {
 				sortOpts = bson.D{{Key: "price.amount", Value: sortValue}}
 			} else {
@@ -77,12 +77,8 @@ func (r *ProductRepository) FindAll(ctx context.Context, page, pageSize int, sor
 			}
 		}
 	} else {
-		// Default sort
 		sortOpts = bson.D{{Key: "_id", Value: 1}}
 	}
-
-	// Add debug logging
-	log.Printf("Applying sort options: %+v", sortOpts)
 
 	findOptions := options.Find().
 		SetSkip(int64(skip)).
@@ -91,38 +87,48 @@ func (r *ProductRepository) FindAll(ctx context.Context, page, pageSize int, sor
 
 	cursor, err := r.collection.Find(ctx, bson.M{}, findOptions)
 	if err != nil {
-		log.Printf("MongoDB Find error: %v", err)
-		return nil, 0, err
+		return nil, 0, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to find products: %v", err))
 	}
 	defer cursor.Close(ctx)
 
 	var products []*product.Product
 	if err = cursor.All(ctx, &products); err != nil {
-		log.Printf("Cursor decode error: %v", err)
-		return nil, 0, err
+		return nil, 0, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to decode products: %v", err))
 	}
 
 	total, err := r.collection.CountDocuments(ctx, bson.M{})
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to count products: %v", err))
 	}
 
 	return products, total, nil
 }
 
 func (r *ProductRepository) Update(ctx context.Context, prod *product.Product) error {
-	_, err := r.collection.ReplaceOne(ctx, bson.M{"_id": prod.ID}, prod)
-	return err
+	result, err := r.collection.ReplaceOne(ctx, bson.M{"_id": prod.ID}, prod)
+	if err != nil {
+		return errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to update product: %v", err))
+	}
+	if result.MatchedCount == 0 {
+		return errors.StandardError(errors.ENOTFOUND, product.ErrProductNotFound)
+	}
+	return nil
 }
 
 func (r *ProductRepository) Delete(ctx context.Context, id string) error {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return errors.StandardError(errors.EINVALID, fmt.Errorf("invalid product ID: %v", err))
 	}
 
-	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
-	return err
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objectID})
+	if err != nil {
+		return errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to delete product: %v", err))
+	}
+	if result.DeletedCount == 0 {
+		return errors.StandardError(errors.ENOTFOUND, product.ErrProductNotFound)
+	}
+	return nil
 }
 
 func (r *ProductRepository) Search(ctx context.Context, name string, minPrice, maxPrice float64) ([]*product.Product, error) {
@@ -150,17 +156,15 @@ func (r *ProductRepository) Search(ctx context.Context, name string, minPrice, m
 		{"$match": matchStage},
 	}
 
-	log.Printf("Pipeline: %+v", pipeline)
-
 	cursor, err := r.collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to search products: %v", err))
 	}
 	defer cursor.Close(ctx)
 
 	var products []*product.Product
 	if err := cursor.All(ctx, &products); err != nil {
-		return nil, err
+		return nil, errors.StandardError(errors.EREPOSITORY, fmt.Errorf("failed to decode search results: %v", err))
 	}
 
 	return products, nil
