@@ -3,6 +3,7 @@ package eventhandlers
 import (
 	"go-microservice-product-porto/internal/domain/product"
 	"go-microservice-product-porto/internal/infrastructure/cache"
+	"go-microservice-product-porto/pkg/errors"
 	"log"
 )
 
@@ -19,20 +20,26 @@ func NewProductEventHandler(cache cache.CacheService, repo product.Repository) *
 }
 
 func (h *ProductEventHandler) HandleProductCreated(event *product.ProductCreatedEvent) {
-	// Clear products list cache
-	h.cache.Delete("products_list")
+	if err := h.cache.Delete("products_list"); err != nil {
+		log.Printf("Error deleting products_list from cache: %v", errors.StandardError(errors.ECACHE, err))
+	}
 }
 
 func (h *ProductEventHandler) HandleStockUpdated(event *product.ProductStockUpdatedEvent) {
-	// Update product cache
-	h.cache.Set(event.Product.ID.Hex(), event.Product)
+	if err := h.cache.Set(event.Product.ID.Hex(), event.Product); err != nil {
+		log.Printf("Error updating cache: %v", errors.StandardError(errors.ECACHE, err))
+		return
+	}
 
-	// Additional logging or monitoring could be added here
 	log.Printf("Stock updated for product %s from %d to %d",
 		event.Product.ID.Hex(), event.OldStock, event.NewStock)
 }
 func (h *ProductEventHandler) HandleProductDeleted(event *product.ProductDeletedEvent) {
-	// Remove from cache
-	h.cache.Delete(event.ProductID)
-	h.cache.Delete("products_list")
+	if err := h.cache.Delete(event.ProductID); err != nil {
+		log.Printf("Error deleting product from cache: %v", errors.StandardError(errors.ECACHE, err))
+	}
+
+	if err := h.cache.Delete("products_list"); err != nil {
+		log.Printf("Error deleting products_list from cache: %v", errors.StandardError(errors.ECACHE, err))
+	}
 }

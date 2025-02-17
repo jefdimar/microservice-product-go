@@ -3,7 +3,9 @@ package queries
 import (
 	"context"
 
+	"fmt"
 	"go-microservice-product-porto/internal/domain/product"
+	"go-microservice-product-porto/pkg/errors"
 )
 
 type ListProductsQuery struct {
@@ -34,9 +36,21 @@ func (h *ProductQueryHandler) HandleListProducts(ctx context.Context, query List
 		query.SortDir = "asc"
 	}
 
+	// Generate cache key based on query parameters
+	cacheKey := fmt.Sprintf("products_list_p%d_s%d_%s_%s", query.Page, query.PageSize, query.SortBy, query.SortDir)
+
+	// Try to get from cache first
+	cachedData, err := h.cache.Get(cacheKey)
+	if err == nil && cachedData != nil {
+		if response, ok := cachedData.(*ListProductsResponse); ok {
+			return response, nil
+		}
+	}
+
+	// Get from repository if not in cache
 	products, total, err := h.repo.FindAll(ctx, query.Page, query.PageSize, query.SortBy, query.SortDir)
 	if err != nil {
-		return nil, err
+		return nil, errors.StandardError(errors.EREPOSITORY, err)
 	}
 
 	response := &ListProductsResponse{
@@ -44,6 +58,11 @@ func (h *ProductQueryHandler) HandleListProducts(ctx context.Context, query List
 		Total:    total,
 		Page:     query.Page,
 		PageSize: query.PageSize,
+	}
+
+	// Store in cache
+	if err := h.cache.Set(cacheKey, response); err != nil {
+		return nil, errors.StandardError(errors.ECACHE, err)
 	}
 
 	return response, nil

@@ -28,7 +28,9 @@ vendor/
 *.log
 docs/
 
+tmp
 tmp/main
 
 *.env
 
+.air.toml
