@@ -32,5 +32,3 @@ tmp
 tmp/main
 
 *.env
-
-.air.toml
