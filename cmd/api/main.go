@@ -12,9 +12,13 @@ import (
 	"go-microservice-product-porto/internal/interfaces/api/http"
 
 	"go-microservice-product-porto/pkg/config"
+	"go-microservice-product-porto/pkg/logger"
 )
 
 func main() {
+	// Initialize logger
+	logger.Init("debug")
+
 	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
