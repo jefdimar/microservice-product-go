@@ -2,14 +2,7 @@ package common
 
 import "strconv"
 
-func ParseInt(value string, defaultValue int) int {
-	if value == "" {
-		return defaultValue
-	}
-
-	intValue, err := strconv.Atoi(value)
-	if err != nil {
-		return defaultValue
-	}
-	return intValue
+func ParseInt(str string) int {
+	val, _ := strconv.Atoi(str)
+	return val
 }

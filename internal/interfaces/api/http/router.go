@@ -7,6 +7,10 @@ import (
 func SetupRouter(handler *ProductHandler) *gin.Engine {
 	router := gin.Default()
 
+	// Middleware
+	router.Use(CORSMiddleware())
+	router.Use(LoggerMiddleware())
+
 	// API routes
 	v1 := router.Group("/api/v1")
 	{
