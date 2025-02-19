@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-
 	"go-microservice-product-porto/internal/application/commands"
 	eventhandlers "go-microservice-product-porto/internal/application/event_handlers"
 	"go-microservice-product-porto/internal/application/queries"
@@ -27,8 +25,6 @@ func main() {
 		logger.Error().
 			Err(err).
 			Msg("Failed to load configuration")
-
-		log.Fatal("Failed to load configuration:", err)
 	}
 
 	// Initialize MongoDB client
@@ -44,8 +40,6 @@ func main() {
 		logger.Error().
 			Err(err).
 			Msg("Failed to initialize MongoDB client")
-
-		log.Fatal("Failed to initialize MongoDB client:", err)
 	}
 
 	// Initialize repository
@@ -63,8 +57,6 @@ func main() {
 		logger.Error().
 			Err(err).
 			Msg("Failed to initialize Redis cache")
-
-		log.Fatal("Failed to initialize Redis cache:", err)
 	}
 
 	// Initialize event handler
@@ -90,6 +82,8 @@ func main() {
 	// Start server
 	logger.Info().Msg("Starting server...")
 	if err := router.Run(cfg.ServerAddress); err != nil {
-		log.Fatal("Server failed to start:", err)
+		logger.Error().
+			Err(err).
+			Msg("Failed to start server")
 	}
 }
